@@ -1,0 +1,45 @@
+name: Feature request
+description: |
+  Suggest a feature for this package.
+
+  Sponsors get priority issues, PRs, fixes and requests. Not a sponsor? You're a just click away! https://github.com/sponsors/DarkGhostHunter.
+title: "[1.x] Add this cool feature for this package"
+labels: ["enhancement"]
+assignees:
+  - DarkGhostHunter
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for contributing to this package!
+        New features keep this package fresh and fun for everybody to use.
+
+        Your features are accepted at the **sole discretion of the maintainer**.
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe how the feature works
+      placeholder: |
+        This new feature would accomplish...
+
+        It could be implemented by doing...
+
+        It should be maintainable because...
+
+        And it would be cool because...
+    validations:
+      required: true
+  - type: textarea
+    id: sample
+    attributes:
+      label: Config or code sample
+      description: Show a small snippet on how the feature would be used
+      render: yaml
+      placeholder: |
+        myproject:
+          commands:
+            - name: Example
+              cmd: echo new-feature
+    validations:
+      required: true

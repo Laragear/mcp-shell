@@ -1,0 +1,281 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "shell-runner-commands-schema",
+  "title": "shell-runner command configuration",
+  "description": "Configuration for the shell-runner MCP server. Every top-level key except 'defaults' and 'version' is a command group; every command entry in a group becomes one MCP tool named <group>__<slug-of-label>.",
+  "type": "object",
+  "properties": {
+    "defaults": {
+      "type": "object",
+      "description": "Fallbacks for all groups. Precedence: command > group > defaults > environment > built-in.",
+      "properties": {
+        "timeout": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "Default command timeout in seconds (built-in default: 120)."
+        },
+        "max_output": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "description": "Default output truncation limit in characters (built-in default: 20000)."
+        },
+        "output_to": {
+          "$ref": "#/definitions/outputTo",
+          "description": "Opt-in raw output to a file. Disabled by default: file output can persist secrets a command prints. Nearest definition (command > group > defaults) wins wholesale."
+        }
+      },
+      "additionalProperties": false
+    },
+    "version": {
+      "type": "string",
+      "description": "Reserved for future use; ignored."
+    }
+  },
+  "definitions": {
+    "outputTo": {
+      "description": "Opt-in raw output to a file. Disabled by default: file output can persist secrets a command prints. A string is a path written on every run; a mapping configures a directory the agent may write to when allow_agent is true. {command} and {group} placeholders expand.",
+      "oneOf": [
+        {
+          "type": "boolean",
+          "enum": [
+            false
+          ],
+          "description": "Disables file output (useful to override a broader setting)."
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "description": "Path written on every run, truncated per run. Owner-only permissions."
+        },
+        {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Path written on every run. Mutually exclusive with dir."
+            },
+            "dir": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Directory for agent-decided output files. Required with allow_agent."
+            },
+            "allow_agent": {
+              "type": "boolean",
+              "default": false,
+              "description": "Let the agent opt in per call with an output_to argument (true, or a strict filename)."
+            },
+            "append": {
+              "type": "boolean",
+              "default": false,
+              "description": "Append across runs instead of truncating."
+            },
+            "stderr": {
+              "type": "boolean",
+              "default": false,
+              "description": "Capture stderr in addition to stdout."
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "additionalProperties": {
+    "type": "object",
+    "description": "A command group.",
+    "properties": {
+      "description": {
+        "type": "string",
+        "description": "What this group does; used in tool descriptions."
+      },
+      "trigger": {
+        "type": "string",
+        "description": "When the agent should use these tools; included verbatim in tool descriptions."
+      },
+      "env": {
+        "type": "object",
+        "description": "Environment variables propagated to every command in this group (command env overrides group env).",
+        "additionalProperties": {
+          "type": [
+            "string",
+            "number",
+            "boolean"
+          ]
+        }
+      },
+      "timeout": {
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "description": "Default command timeout in seconds for this group."
+      },
+      "cwd": {
+        "type": "string",
+        "description": "Default working directory for this group (relative to the agent's working directory)."
+      },
+      "output_to": {
+        "$ref": "#/definitions/outputTo"
+      },
+      "commands": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "required": [
+            "label",
+            "command"
+          ],
+          "properties": {
+            "label": {
+              "type": "string",
+              "minLength": 1,
+              "description": "Short human-readable label; lowercased and slugged into the tool name."
+            },
+            "command": {
+              "type": "string",
+              "minLength": 1,
+              "description": "The command line to run (runs through the shell; pipes and redirects work). May contain {name} placeholders filled by named arguments."
+            },
+            "description": {
+              "type": "string",
+              "description": "Refines the tool description beyond the group's."
+            },
+            "args": {
+              "default": false,
+              "description": "Argument policy. Absent or false (the default): runs as-is, no arguments. true: free-form string list, shell-quoted, appended. List: named arguments, which fill {name} placeholders in cmd or are appended in declared order.",
+              "oneOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "required": [
+                      "name"
+                    ],
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "description": {
+                        "type": "string"
+                      },
+                      "required": {
+                        "type": "boolean",
+                        "default": false
+                      },
+                      "default": {
+                        "type": "string",
+                        "description": "Value used when the caller omits this argument."
+                      },
+                      "prefix": {
+                        "type": "string",
+                        "description": "Literal text glued before the shell-quoted value, e.g. \"--memory \". An omitted optional argument emits nothing."
+                      },
+                      "suffix": {
+                        "type": "string",
+                        "description": "Literal text glued after the shell-quoted value, e.g. \":rw\"."
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                }
+              ]
+            },
+            "env": {
+              "type": "object",
+              "description": "Environment variables for this command only (overrides group env).",
+              "additionalProperties": {
+                "type": [
+                  "string",
+                  "number",
+                  "boolean"
+                ]
+              }
+            },
+            "timeout": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "description": "Timeout in seconds for this command."
+            },
+            "cwd": {
+              "type": "string",
+              "description": "Working directory for this command."
+            },
+            "pipe": {
+              "type": "string",
+              "description": "Second command that the first command's stdout is piped into; the tool result is its output. The exit code is always the first command's."
+            },
+            "check": {
+              "type": "object",
+              "description": "Automatic success check on stdout+stderr after every run. All present rules must pass; failure marks the tool result as an error.",
+              "properties": {
+                "contains": {
+                  "type": [
+                    "string",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Every string must appear."
+                },
+                "not_contains": {
+                  "type": [
+                    "string",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "No string may appear."
+                },
+                "regex": {
+                  "type": [
+                    "string",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Every regex must match (multiline)."
+                },
+                "not_regex": {
+                  "type": [
+                    "string",
+                    "array"
+                  ],
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "No regex may match (multiline)."
+                }
+              },
+              "additionalProperties": false
+            },
+            "read_only": {
+              "type": "boolean",
+              "default": false,
+              "description": "MCP readOnlyHint: the command does not modify its environment."
+            },
+            "destructive": {
+              "type": "boolean",
+              "description": "MCP destructiveHint. Defaults to the inverse of read_only."
+            },
+            "max_output": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Output truncation limit in characters for this command."
+            },
+            "output_to": {
+              "$ref": "#/definitions/outputTo"
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "additionalProperties": false
+  }
+}

@@ -1,0 +1,90 @@
+name: Bug Report
+description: |
+  File a bug report to be fixed.
+
+  Sponsors get priority issues, PRs, fixes and requests. Not a sponsor? You're a just click away! https://github.com/sponsors/DarkGhostHunter.
+title: "[1.x] What does happen that is considered an error or bug?"
+labels: [ "bug" ]
+type: "bug"
+assignees:
+  - DarkGhostHunter
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!
+
+        The more detailed this bug report is, the faster it can be reviewed and fixed.
+  - type: input
+    id: version-node-os
+    attributes:
+      label: Node.js & Platform
+      description: Exact Node.js and Platform (OS) versions running this MCP server.
+      placeholder: 22.11.0 - Ubuntu 24.04 x64
+    validations:
+      required: true
+  - type: input
+    id: version-package
+    attributes:
+      label: Package version
+      description: Exact version of `@laragear/mcp-shell-runner` (or the commit, if running from source).
+      placeholder: 1.0.0
+    validations:
+      required: true
+  - type: input
+    id: mcp-client
+    attributes:
+      label: MCP client
+      description: Which MCP client (agent harness) is calling the server, and its version.
+      placeholder: Claude Code 2.0 / Codex CLI / ZCode
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Config file
+      description: The `shell-runner.yaml` (or JSON) that exposes the commands. Redact secrets.
+      render: yaml
+      placeholder: |
+        myproject:
+          description: Build, test and lint this project
+          commands:
+            - name: Run tests
+              cmd: npm test
+    validations:
+      required: true
+  - type: textarea
+    id: expectation
+    attributes:
+      label: Expectation
+      description: Write what you expect to (correctly) happen.
+      placeholder: When the agent calls the tool, I expect the command to run and return the exit code.
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Write what (incorrectly) happens instead.
+      placeholder: Instead, when the agent calls the tool, I receive that.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to reproduce
+      description: The tool call the agent made, and what came back. Include the `list_commands` output if unsure.
+      render: json
+      placeholder: |
+        { "method": "tools/call", "params": { "name": "myproject__run_tests", "arguments": {} } }
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: If you have server stderr output or a stack trace, copy it here. You may hide sensitive information.
+      placeholder: This is automatically formatted into code, no need for ``` backticks.
+      render: shell
+    validations:
+      required: false

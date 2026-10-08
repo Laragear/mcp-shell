@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Support Laragear!
+    url: https://github.com/sponsors/DarkGhostHunter
+    about: If you think my packages are great, spare some few dollars
+  - name: Check more packages
+    url: https://github.com/Laragear
+    about: Check other packages I've made

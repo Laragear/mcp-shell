@@ -1,0 +1,60 @@
+{
+  "name": "@laragear/mcp-shell-runner",
+  "version": "1.0.0",
+  "description": "MCP server that exposes only the shell commands you declare in a YAML or JSON config file.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Laragear/mcp-shell-runer"
+  },
+  "bugs": {
+    "url": "https://github.com/Laragear/mcp-shell-runer/issues"
+  },
+  "homepage": "https://github.com/Laragear/mcp-shell-runer#readme",
+  "type": "module",
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "shell",
+    "ai-agent",
+    "model-context-protocol",
+    "claude",
+    "codex",
+    "copilot"
+  ],
+  "bin": {
+    "mcp-shell-runner": "mcp/main.js"
+  },
+  "files": [
+    "mcp/",
+    "commands.schema.json"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "test": "npm run build && vitest run",
+    "coverage": "npm run build && vitest run --coverage",
+    "prepack": "npm run build",
+    "prepublishOnly": "npm run lint && npm test",
+    "lint": "biome check src tests",
+    "format": "biome format --write src tests",
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/node": "^26.6.4",
+    "@vitest/coverage-v8": "^5.0.3",
+    "typescript": "^7.0.2",
+    "vitest": "^5.0.3"
+  },
+  "dependencies": {
+    "@prefecthq/fastmcp-ts": "^1.7.3",
+    "zod": "^4.6.5"
+  }
+}

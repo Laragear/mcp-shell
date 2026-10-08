@@ -1,0 +1,23 @@
+version: 2
+updates:
+- package-ecosystem: "npm"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    timezone: "America/Santiago"
+  open-pull-requests-limit: 5
+  groups:
+    node-dependencies:
+      patterns:
+        - "*" # Groups all dependency updates into one PR to avoid noise
+- package-ecosystem: "github-actions"
+  directory: "/"
+  schedule:
+    interval: "weekly"
+    time: "09:00"
+    timezone: "America/Santiago"
+  groups:
+    actions:
+      patterns:
+        - "*"

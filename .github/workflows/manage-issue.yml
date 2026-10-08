@@ -1,0 +1,10 @@
+on:
+  issues:
+    types: [opened, edited]             # Trigger the workflow only on issues.
+
+jobs:
+  handle-issue:
+    uses: Laragear/GitHub-Meta/.github/workflows/manage-issue.yml@main
+    with:
+      target-org: 'Laragear'
+      # log-level: 'verbose'            # Only required if you need debugging.
