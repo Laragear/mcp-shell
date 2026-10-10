@@ -7,7 +7,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # Required for npm provenance.
+  id-token: write # Required for npm provenance / OIDC.
 
 jobs:
   publish:
@@ -36,6 +36,4 @@ jobs:
       # prepublishOnly runs lint + test (which builds), and prepack rebuilds
       # the mcp/ output that ships in the tarball.
       - name: Publish package to NPM
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: npm publish --access pu
