@@ -5,12 +5,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Laragear/mcp-shell-runer"
+    "url": "https://github.com/Laragear/mcp-shell-runner"
   },
   "bugs": {
-    "url": "https://github.com/Laragear/mcp-shell-runer/issues"
+    "url": "https://github.com/Laragear/mcp-shell-runner/issues"
   },
-  "homepage": "https://github.com/Laragear/mcp-shell-runer#readme",
+  "homepage": "https://github.com/Laragear/mcp-shell-runner#readme",
   "type": "module",
   "keywords": [
     "mcp",
