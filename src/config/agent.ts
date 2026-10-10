@@ -1,4 +1,4 @@
-// The agent-owned config file (~/.agents/mcp-shell-runner/<project>/agent.yaml,
+// The agent-owned config file (~/.agents/mcp-shell/<project>/agent.yaml,
 // next to the trusted store): commands the agent proposed and the human
 // approved over MCP elicitation. Human config files are never rewritten; the
 // agent file merges beneath them per group (human groups win wholesale).

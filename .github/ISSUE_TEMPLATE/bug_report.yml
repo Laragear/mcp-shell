@@ -27,7 +27,7 @@ body:
     id: version-package
     attributes:
       label: Package version
-      description: Exact version of `@laragear/mcp-shell-runner` (or the commit, if running from source).
+      description: Exact version of `@laragear/mcp-shell` (or the commit, if running from source).
       placeholder: 1.0.0
     validations:
       required: true

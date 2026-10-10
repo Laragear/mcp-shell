@@ -14,7 +14,7 @@ export { emitGroupTemplate };
 /** The pinned CDN copy of the published package's schema: the committable
  * reference for npx users, who have no node_modules path to point at. */
 export const CDN_SCHEMA_URL =
-  "https://cdn.jsdelivr.net/npm/@laragear/mcp-shell-runner@1/commands.schema.json";
+  "https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@0/commands.schema.json";
 
 /**
  * The absolute path of the bundled JSON Schema of the config file, sibling of
@@ -48,10 +48,10 @@ export function schemaRef(): string {
     projectDir(),
     "node_modules",
     "@laragear",
-    "mcp-shell-runner",
+    "mcp-shell",
     "commands.schema.json",
   );
-  if (isFile(installed)) return "./node_modules/@laragear/mcp-shell-runner/commands.schema.json";
+  if (isFile(installed)) return "./node_modules/@laragear/mcp-shell/commands.schema.json";
   const dumped = path.join(projectDir(), ".agents", "commands.schema.json");
   if (isFile(dumped)) return ".agents/commands.schema.json";
   return CDN_SCHEMA_URL;
@@ -63,13 +63,13 @@ export function emitConfigTemplate(cfg: LoadedConfig): string {
   const lines = [
     `# yaml-language-server: $schema=${schemaRef()}`,
     `# shell-runner config template. Save the trusted copy with --template --save agents:`,
-    `#   ~/.agents/mcp-shell-runner/<project>/commands.yaml  (trusted store, authoritative)`,
+    `#   ~/.agents/mcp-shell/<project>/commands.yaml  (trusted store, authoritative)`,
     `#   ~/.agents/shell-runner.yaml                         (user-global; merged per group)`,
     `# or point $SHELL_RUNNER_CONFIG at any path.`,
     `# A <project>/.agents/shell-runner.yaml file is only a proposal: it is never`,
     `# loaded. Review it into the trusted store with --merge.`,
     `# The agent may also propose commands with its save_command tool; you approve`,
-    `# each one in a dialog before it lands in ~/.agents/mcp-shell-runner/<project>/agent.yaml.`,
+    `# each one in a dialog before it lands in ~/.agents/mcp-shell/<project>/agent.yaml.`,
     `# The server re-reads the file on every tool call — edits apply immediately.`,
     ``,
   ];

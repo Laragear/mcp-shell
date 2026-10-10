@@ -1,16 +1,16 @@
 {
-  "name": "@laragear/mcp-shell-runner",
-  "version": "1.0.0",
+  "name": "@laragear/mcp-shell",
+  "version": "0.0.1",
   "description": "MCP server that exposes only the shell commands you declare in a YAML or JSON config file.",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Laragear/mcp-shell-runner"
+    "url": "https://github.com/DarkGhostHunter/mcp-shell"
   },
   "bugs": {
-    "url": "https://github.com/Laragear/mcp-shell-runner/issues"
+    "url": "https://github.com/DarkGhostHunter/mcp-shell/issues"
   },
-  "homepage": "https://github.com/Laragear/mcp-shell-runner#readme",
+  "homepage": "https://github.com/DarkGhostHunter/mcp-shell#readme",
   "type": "module",
   "keywords": [
     "mcp",
@@ -23,7 +23,7 @@
     "copilot"
   ],
   "bin": {
-    "mcp-shell-runner": "mcp/main.js"
+    "mcp-shell": "mcp/main.js"
   },
   "files": [
     "mcp/",

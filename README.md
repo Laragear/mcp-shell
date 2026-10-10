@@ -1,7 +1,7 @@
 # MCP Shell Runner
 
-[![Latest Version on npm](https://img.shields.io/npm/v/@laragear/mcp-shell-runner.svg)](https://www.npmjs.com/package/@laragear/mcp-shell-runner)
-[![Latest stable test run](https://github.com/Laragear/mcp-shell-runner/actions/workflows/test.yml/badge.svg)](https://github.com/Laragear/mcp-shell-runer/actions/workflows/test.yml)
+[![Latest Version on npm](https://img.shields.io/npm/v/@laragear/mcp-shell.svg)](https://www.npmjs.com/package/@laragear/mcp-shell)
+[![Latest stable test run](https://github.com/DarkGhostHunter/mcp-shell/actions/workflows/test.yml/badge.svg)](https://github.com/DarkGhostHunter/mcp-shell/actions/workflows/test.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
 Let your AI agent run your project commands, and nothing else. Yes, only the ones you allow.
@@ -36,7 +36,7 @@ Fire up your MCP client and register the server. There is no install step if you
   "mcpServers": {
     "shell-runner": {
       "command": "npx",
-      "args": ["-y", "@laragear/mcp-shell-runner"]
+      "args": ["-y", "@laragear/mcp-shell"]
     }
   }
 }
@@ -47,7 +47,7 @@ Each client keeps this file in a different place: `.mcp.json` for Claude Code, `
 Alternatively, you may install the package into your project.
 
 ```bash
-npm install @laragear/mcp-shell-runner
+npm install @laragear/mcp-shell
 ```
 
 ## How does it work?
@@ -102,12 +102,12 @@ You do not have to remember every key. Call the `config_template` tool (or run t
 
 The package ships a JSON Schema of the config file, `commands.schema.json`, next to the compiled server. Every generated template starts with a line that binds your editor to it, and the server picks the most portable reference it can find, in this order:
 
-1. `./node_modules/@laragear/mcp-shell-runner/commands.schema.json`, when the package is installed in the project
+1. `./node_modules/@laragear/mcp-shell/commands.schema.json`, when the package is installed in the project
 2. `.agents/commands.schema.json`, when you dumped the schema there yourself
-3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell-runner@1/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
+3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@0/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
 
 ```yaml
-# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell-runner@1/commands.schema.json
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@0/commands.schema.json
 ```
 
 Keep that line as the first line of your `shell-runner.yaml` and any editor with YAML language support (VS Code, JetBrains, Zed, Neovim with yaml-language-server) gives you completion, key descriptions and validation as you type. It is committable, so everyone on the project gets the same hints.
@@ -115,7 +115,7 @@ Keep that line as the first line of your `shell-runner.yaml` and any editor with
 If you prefer a local file over the CDN, dump the schema next to your config and commit both:
 
 ```bash
-npx @laragear/mcp-shell-runner --schema --save agents
+npx @laragear/mcp-shell --schema --save agents
 ```
 
 The emitted `$schema` line then becomes `.agents/commands.schema.json` on the next `config_template` call.
@@ -126,7 +126,7 @@ Agents get the same schema through the `config_schema` tool, which returns it ve
 
 You may skip the manual editing and have the agent do the typing. Ask it something like *"add a command that runs the test suite"*, and it will call its `save_command` tool with a proposal. Your MCP client then shows you a dialog with the exact YAML: the group, the command name and the full command line. Nothing is written until you accept.
 
-* **Accept**, and the command lands in `~/.agents/mcp-shell-runner/<project>/agent.yaml`, a file only the server writes. The new tool is available immediately, no restarts.
+* **Accept**, and the command lands in `~/.agents/mcp-shell/<project>/agent.yaml`, a file only the server writes. The new tool is available immediately, no restarts.
 * **Decline**, and nothing is written. The agent is told you said no.
 
 The agent never edits your own config file. Proposals land in their own file, which merges beneath your config per group: your groups always win wholesale, agent groups only fill the gaps. If you later declare a group with the same name, the agent group is shadowed and the doctor report says so. The agent can also propose removing a command it previously added, with the same dialog, but it can never touch commands you declared yourself.
@@ -242,14 +242,14 @@ Like `timeout` and `max_output`, the nearest definition wins: `defaults`, then g
 Where does the config file go? The server checks these locations in order and the first existing file wins.
 
 1. `$SHELL_RUNNER_CONFIG`, an explicit path, handy for CI. When set, it is used alone
-2. `~/.agents/mcp-shell-runner/<project>/commands.yaml`, the trusted store for this project, outside the project tree
+2. `~/.agents/mcp-shell/<project>/commands.yaml`, the trusted store for this project, outside the project tree
 3. `~/.agents/shell-runner.yaml`, a user-global fallback
 
 The trusted store and the user-global config are not exclusive: the server merges them **per group**. Store groups override same-named global groups, the global file supplies the rest, and `defaults` merge with store precedence. Commands you share through the user-global file become available everywhere, instead of only where no store config exists.
 
 The store path encodes your project directory, so every project gets its own file. Run the CLI with `--template --save agents` to create it, and the server re-reads it on every tool call, so there are no restarts to worry about.
 
-The agent file `~/.agents/mcp-shell-runner/<project>/agent.yaml` joins the merge one slot below both: your groups win wholesale and agent groups fill the gaps. See [Letting the agent propose the commands](#letting-the-agent-propose-the-commands).
+The agent file `~/.agents/mcp-shell/<project>/agent.yaml` joins the merge one slot below both: your groups win wholesale and agent groups fill the gaps. See [Letting the agent propose the commands](#letting-the-agent-propose-the-commands).
 
 > [!WARNING]
 >
@@ -321,21 +321,21 @@ For CI, you may skip the MCP session entirely and go full manual.
 
 ```bash
 # Doctor report for a config; exit 0 = valid, 1 = issues found
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --validate [path]
+node node_modules/@laragear/mcp-shell/mcp/main.js --validate [path]
 
 # Print a fill-in YAML template of the current config
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --template [path]
+node node_modules/@laragear/mcp-shell/mcp/main.js --template [path]
 
 # Save the template as the trusted store of the project, or the user-global one
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --template --save agents
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --template --save user --force
+node node_modules/@laragear/mcp-shell/mcp/main.js --template --save agents
+node node_modules/@laragear/mcp-shell/mcp/main.js --template --save user --force
 
 # Review a <project>/.agents/shell-runner.yaml proposal into the trusted store
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --merge
+node node_modules/@laragear/mcp-shell/mcp/main.js --merge
 
 # Print the config JSON Schema, or save it next to the project config
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --schema
-node node_modules/@laragear/mcp-shell-runner/mcp/main.js --schema --save agents --force
+node node_modules/@laragear/mcp-shell/mcp/main.js --schema
+node node_modules/@laragear/mcp-shell/mcp/main.js --schema --save agents --force
 ```
 
 Saving refuses to replace an existing file unless you pass `--force`. You may also run the test suite with `npm test`.

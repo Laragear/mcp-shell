@@ -42,7 +42,7 @@ describeBuilt("compiled CLI", () => {
     const target = path.join(
       homeDir,
       ".agents",
-      "mcp-shell-runner",
+      "mcp-shell",
       withEnv({ SHELL_RUNNER_PROJECT_DIR: projDir }, () => projectSlugOf()),
       "commands.yaml",
     );

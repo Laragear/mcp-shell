@@ -5,7 +5,7 @@
 // commands. The trusted locations are all under the user's home:
 //
 //   1. $SHELL_RUNNER_CONFIG — explicit path (CI, scripting); used alone
-//   2. ~/.agents/mcp-shell-runner/<project-slug>/commands.yaml — trusted
+//   2. ~/.agents/mcp-shell/<project-slug>/commands.yaml — trusted
 //      per-project store (YAML only), reviewed in with `--merge`
 //   3. ~/.agents/shell-runner.{yaml,yml,json} — user-global, merged per group
 //
@@ -19,7 +19,7 @@ import * as path from "node:path";
 
 const PRIMARY_DIR = ".agents";
 const CONFIG_EXTENSIONS = ["yaml", "yml", "json"];
-const STORE_ROOT = ["mcp-shell-runner"] as const;
+const STORE_ROOT = ["mcp-shell"] as const;
 /** The trusted store file of one project (YAML only: one file, no variants). */
 export const STORE_CONFIG_FILE = "commands.yaml";
 /** The agent-owned companion file: commands approved over elicitation. */

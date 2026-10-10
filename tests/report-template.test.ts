@@ -144,13 +144,13 @@ describe("schemaRef", () => {
         proj,
         "node_modules",
         "@laragear",
-        "mcp-shell-runner",
+        "mcp-shell",
         "commands.schema.json",
       );
       fs.mkdirSync(path.dirname(installed), { recursive: true });
       fs.writeFileSync(installed, "{}");
       withEnv({ SHELL_RUNNER_PROJECT_DIR: proj }, () => {
-        expect(schemaRef()).toBe("./node_modules/@laragear/mcp-shell-runner/commands.schema.json");
+        expect(schemaRef()).toBe("./node_modules/@laragear/mcp-shell/commands.schema.json");
       });
     } finally {
       fs.rmSync(proj, { recursive: true, force: true });

@@ -4,7 +4,7 @@ Instructions for AI agents working in this repository. This file assumes you kno
 
 ## What this project is
 
-`@laragear/mcp-shell-runner` is an MCP server that exposes **only the shell commands a human declares** in a YAML or JSON config file, so an AI agent can run project commands like tests, builds and linters without free-form shell access. Every declared command becomes one MCP tool named `<group>__<slug>`; if the config says `npm test`, that is the only thing that can ever execute.
+`@laragear/mcp-shell` is an MCP server that exposes **only the shell commands a human declares** in a YAML or JSON config file, so an AI agent can run project commands like tests, builds and linters without free-form shell access. Every declared command becomes one MCP tool named `<group>__<slug>`; if the config says `npm test`, that is the only thing that can ever execute.
 
 ## How this server works, end to end
 
@@ -21,9 +21,9 @@ Instructions for AI agents working in this repository. This file assumes you kno
 Looked up in order, first match wins:
 
 1. `$SHELL_RUNNER_CONFIG`, an explicit path, used alone (agent proposals are refused in this mode)
-2. `~/.agents/mcp-shell-runner/<project-slug>/commands.yaml`, the trusted per-project store (the authoritative config, outside the project tree)
+2. `~/.agents/mcp-shell/<project-slug>/commands.yaml`, the trusted per-project store (the authoritative config, outside the project tree)
 3. `~/.agents/shell-runner.{yaml,yml,json}`, user-global, merged per group beneath the store (store groups win wholesale)
-4. `~/.agents/mcp-shell-runner/<project-slug>/agent.yaml`, the agent file: commands the human approved through `save_command`, merged beneath everything else (agent groups only fill gaps a human config does not declare; a shadowed agent group produces a config issue)
+4. `~/.agents/mcp-shell/<project-slug>/agent.yaml`, the agent file: commands the human approved through `save_command`, merged beneath everything else (agent groups only fill gaps a human config does not declare; a shadowed agent group produces a config issue)
 
 Nothing inside the project tree is loaded as config. A `<project>/.agents/shell-runner.{yaml,yml,json}` file is a proposal: never executed, reported by the doctor, and folded into the store only by the human-run `--merge` CLI (whole-file y/N confirm; conflicting store groups are overwritten, store defaults survive).
 
@@ -69,7 +69,7 @@ Read `package.json` for the authoritative dependency list and scripts: runtime d
 - **Arguments are shell-quoted, never interpolated raw.** A command with `args: false` runs exactly as written; never weaken this default.
 - **The output contract is central**: `isError` is true exactly when the command timed out, exited non-zero, or failed its `check`; a `pipe` stage never changes the exit code. Timeout kills report "Timed out", external signals report "killed by signal".
 - **Security stance**: whoever edits the config runs arbitrary code, so treat config as code. Output-to-file (`output_to`) stays opt-in and files are owner-only. Secrets given to tools must never surface in server-generated text.
-- **Agent writes pass elicitation, always**: `save_command` and `remove_command` write only the agent file next to the trusted store (`~/.agents/mcp-shell-runner/<project>/agent.yaml`), only after the human accepts the approval dialog, and the write is re-validated. Human config files are never rewritten and agent groups never override human groups. Never add a path where the agent writes config without that dialog.
+- **Agent writes pass elicitation, always**: `save_command` and `remove_command` write only the agent file next to the trusted store (`~/.agents/mcp-shell/<project>/agent.yaml`), only after the human accepts the approval dialog, and the write is re-validated. Human config files are never rewritten and agent groups never override human groups. Never add a path where the agent writes config without that dialog.
 - Node.js >= 18, POSIX shells only. Keep the runtime dependency list minimal.
 
 ## Recommendations

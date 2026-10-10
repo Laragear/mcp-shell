@@ -70,7 +70,7 @@ describe("config template", () => {
     try {
       withEnv({ SHELL_RUNNER_PROJECT_DIR: projDir, SHELL_RUNNER_HOME: userDir }, () => {
         expect(saveTarget("agents")).toBe(
-          path.join(userDir, ".agents", "mcp-shell-runner", projectSlug(), "commands.yaml"),
+          path.join(userDir, ".agents", "mcp-shell", projectSlug(), "commands.yaml"),
         );
         expect(saveTarget("user")).toBe(path.join(userDir, ".agents", "shell-runner.yaml"));
         expect(saveTarget("bogus")).toBeNull();
