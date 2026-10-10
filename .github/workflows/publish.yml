@@ -36,4 +36,4 @@ jobs:
       # prepublishOnly runs lint + test (which builds), and prepack rebuilds
       # the mcp/ output that ships in the tarball.
       - name: Publish package to NPM
-        run: npm publish --access pu
+        run: npm publish --access public
