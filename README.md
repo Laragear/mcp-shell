@@ -56,11 +56,38 @@ You write a config file listing the shell commands you are comfortable with. The
 
 What the agent does not receive is a shell. It can only run what is in your config, and a command without arguments runs exactly as written, every time. If your config says `npm test`, the only thing that can ever execute is `npm test`.
 
-By default, the config file is re-read on every tool call, so your changes applies immediately.
+By default, the config file is re-read on every tool call, so your changes apply immediately.
 
 ## Usage
 
-There are two ways to create the command list. You may write the config file by hand, or have the agent propose the commands and approve each one in a dialog. Both end in the same place: a config file you control.
+There are two ways to create the command list. You may have the agent propose the commands and approve each one in a dialog, or write the config file by hand. Both end in the same place: a config file you control.
+
+### Letting the agent propose the commands
+
+You may skip the manual editing and have the agent do the typing. Ask it something like *"add a command that runs the test suite"*, and it will call its `save_command` tool with a proposal. Your MCP client then shows you a dialog with the exact YAML: the group, the command label and the full command line. Nothing is written until you accept.
+
+* **Accept**, and the command lands in `~/.agents/mcp-shell/<project>/agent.yaml`, a file only the server writes. The new tool is available immediately, no restarts.
+* **Decline**, and nothing is written. The agent is told you said no.
+
+The agent never edits your own config file. Proposals land in their own file, which merges beneath your config per group: your groups always win wholesale, agent groups only fill the gaps. If you later declare a group with the same name, the agent group is shadowed and the doctor report says so. The agent can also propose removing a command it previously added, with the same dialog, but it can never touch commands you declared yourself.
+
+```yaml
+frontend:
+  description: Frontend commands
+  commands:
+    - label: Run tests
+      command: npm test
+```
+
+> [!IMPORTANT]
+>
+> Approving a proposal is the same as writing the command yourself. Read the command line in the dialog before accepting, because the agent could propose anything. The agent file lives in your home directory, outside any repository, so review its content with `list_commands` from time to time.
+
+> [!NOTE]
+>
+> The approval dialog uses MCP elicitation, which not every client supports. When yours does not, the proposal tools answer with an error telling the agent to ask you to add the command by hand. They never fall back to writing anything. Proposals are also refused while `$SHELL_RUNNER_CONFIG` is set, because an explicit config is used alone.
+
+You may read the doctor report at any time: groups the agent proposed are marked with `(agent-proposed)`.
 
 ### Writing the config by hand
 
@@ -96,7 +123,7 @@ With this config the agent gets three tools: `frontend__run_unit_tests`, `fronte
 >
 > Not sure what the server sees? Ask the agent to call `list_commands`. It answers with a doctor report: the config file in use, every problem found and the exact command line each tool will run.
 
-You do not have to remember every key. Call the `config_template` tool (or run the CLI with `--template`) and you get a fill-in YAML file of the current configuration with every supported option visible as a commented reference. Starting from nothing, it emits a starter template you can save straight into the trusted store with `--template --save agents`.
+You do not have to remember every key. Call the `config_template` tool (or run the CLI with `--template`) and you get a fill-in YAML file of the current configuration with every supported option visible as a commented reference. Starting from nothing, it emits a starter template you **can save straight into the trusted store with `--template --save agents`**.
 
 ### Type hints for hand-written configs
 
@@ -104,10 +131,10 @@ The package ships a JSON Schema of the config file, `commands.schema.json`, next
 
 1. `./node_modules/@laragear/mcp-shell/commands.schema.json`, when the package is installed in the project
 2. `.agents/commands.schema.json`, when you dumped the schema there yourself
-3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@0/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
+3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@latest/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
 
 ```yaml
-# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@0/commands.schema.json
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@latest/commands.schema.json
 ```
 
 Keep that line as the first line of your `shell-runner.yaml` and any editor with YAML language support (VS Code, JetBrains, Zed, Neovim with yaml-language-server) gives you completion, key descriptions and validation as you type. It is committable, so everyone on the project gets the same hints.
@@ -121,33 +148,6 @@ npx @laragear/mcp-shell --schema --save agents
 The emitted `$schema` line then becomes `.agents/commands.schema.json` on the next `config_template` call.
 
 Agents get the same schema through the `config_schema` tool, which returns it verbatim. Tell the agent to *fetch the schema with `config_schema`, then write a `shell-runner.yaml`* and it never invents a key. For single-command proposals the `save_command` tool carries the same knowledge in its own input schema.
-
-### Letting the agent propose the commands
-
-You may skip the manual editing and have the agent do the typing. Ask it something like *"add a command that runs the test suite"*, and it will call its `save_command` tool with a proposal. Your MCP client then shows you a dialog with the exact YAML: the group, the command name and the full command line. Nothing is written until you accept.
-
-* **Accept**, and the command lands in `~/.agents/mcp-shell/<project>/agent.yaml`, a file only the server writes. The new tool is available immediately, no restarts.
-* **Decline**, and nothing is written. The agent is told you said no.
-
-The agent never edits your own config file. Proposals land in their own file, which merges beneath your config per group: your groups always win wholesale, agent groups only fill the gaps. If you later declare a group with the same name, the agent group is shadowed and the doctor report says so. The agent can also propose removing a command it previously added, with the same dialog, but it can never touch commands you declared yourself.
-
-```yaml
-frontend:
-  description: Frontend commands
-  commands:
-    - label: Run tests
-      command: npm test
-```
-
-> [!IMPORTANT]
->
-> Approving a proposal is the same as writing the command yourself. Read the command line in the dialog before accepting, because the agent could propose anything. The agent file lives in your home directory, outside any repository, so review its content with `list_commands` from time to time.
-
-> [!NOTE]
->
-> The approval dialog uses MCP elicitation, which not every client supports. When yours does not, the proposal tools answer with an error telling the agent to ask you to add the command by hand. They never fall back to writing anything. Proposals are also refused while `$SHELL_RUNNER_CONFIG` is set, because an explicit config is used alone.
-
-You may read the doctor report at any time: groups the agent proposed are marked with `(agent-proposed)`.
 
 ### Arguments
 
