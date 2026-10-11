@@ -5,12 +5,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/DarkGhostHunter/mcp-shell"
+    "url": "https://github.com/Laragear/mcp-shell"
   },
   "bugs": {
-    "url": "https://github.com/DarkGhostHunter/mcp-shell/issues"
+    "url": "https://github.com/Laragear/mcp-shell/issues"
   },
-  "homepage": "https://github.com/DarkGhostHunter/mcp-shell#readme",
+  "homepage": "https://github.com/Laragear/mcp-shell#readme",
   "type": "module",
   "keywords": [
     "mcp",

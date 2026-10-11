@@ -1,7 +1,7 @@
 # MCP Shell Runner
 
 [![Latest Version on npm](https://img.shields.io/npm/v/@laragear/mcp-shell.svg)](https://www.npmjs.com/package/@laragear/mcp-shell)
-[![Latest stable test run](https://github.com/DarkGhostHunter/mcp-shell/actions/workflows/test.yml/badge.svg)](https://github.com/DarkGhostHunter/mcp-shell/actions/workflows/test.yml)
+[![Latest stable test run](https://github.com/Laragear/mcp-shell/actions/workflows/test.yml/badge.svg)](https://github.com/DarkGhostHunter/mcp-shell/actions/workflows/test.yml)
 [![MIT License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE.md)
 
 Let your AI agent run your project commands, and nothing else. Yes, only the ones you allow.
