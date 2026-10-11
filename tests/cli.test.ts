@@ -6,6 +6,10 @@ import { storeConfigPath } from "../src/config/index.js";
 import { mergeIo } from "../src/cli.js";
 import { makeTmp, withEnv } from "./helpers.js";
 
+// The untouched terminal I/O, before any test replaces it via answer().
+const realPrompt = mergeIo.prompt;
+const realReadLine = mergeIo.readLine;
+
 const tmp = makeTmp("sr-cli-");
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
@@ -273,5 +277,72 @@ describe("runCli --merge", () => {
     expect(withEnv(env(), () => runCli(["--merge"]))).toBe(1);
     expect(errored.join("\n")).toContain("invalid config");
     expect(withEnv(env(), () => fs.existsSync(storeConfigPath()))).toBe(false);
+  });
+
+  it("reports an unparseable store without writing", () => {
+    proposal("g:\n  commands:\n    - label: A\n      command: echo\n");
+    withEnv(env(), () => {
+      fs.mkdirSync(path.dirname(storeConfigPath()), { recursive: true });
+      fs.writeFileSync(storeConfigPath(), "a: &anchor b\n");
+    });
+    answer("y\n");
+    expect(withEnv(env(), () => runCli(["--merge"]))).toBe(1);
+    expect(errored.join("\n")).toContain("could not be parsed");
+    expect(withEnv(env(), () => fs.existsSync(storeConfigPath()))).toBe(true);
+  });
+
+  it("merges an empty proposal into an existing store", () => {
+    proposal("");
+    withEnv(env(), () => {
+      fs.mkdirSync(path.dirname(storeConfigPath()), { recursive: true });
+      fs.writeFileSync(storeConfigPath(), "g:\n  commands:\n    - label: Old\n      command: echo\n");
+    });
+    answer("y\n");
+    expect(withEnv(env(), () => runCli(["--merge"]))).toBe(0);
+  });
+
+  it("merges into an empty store file", () => {
+    proposal("g:\n  commands:\n    - label: A\n      command: echo\n");
+    withEnv(env(), () => {
+      fs.mkdirSync(path.dirname(storeConfigPath()), { recursive: true });
+      fs.writeFileSync(storeConfigPath(), "");
+    });
+    answer("y\n");
+    expect(withEnv(env(), () => runCli(["--merge"]))).toBe(0);
+    expect(storeText()).toContain("label: A");
+  });
+
+  it("drops a store default that is not a mapping", () => {
+    proposal("g:\n  commands:\n    - label: A\n      command: echo\n");
+    withEnv(env(), () => {
+      fs.mkdirSync(path.dirname(storeConfigPath()), { recursive: true });
+      fs.writeFileSync(storeConfigPath(), "defaults: 42\ng:\n  commands: []\n");
+    });
+    answer("y\n");
+    expect(withEnv(env(), () => runCli(["--merge"]))).toBe(0);
+    expect(storeText()).not.toContain("defaults");
+  });
+
+  it("the default merge I/O writes the prompt and reads stdin", () => {
+    mergeIo.prompt = realPrompt;
+    mergeIo.readLine = realReadLine;
+    const out = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    // Stdin blocks forever in a test worker, so fd 0 is pointed at a file
+    // holding the answer: closing it makes the next open reclaim fd 0.
+    const stdinFile = path.join(tmp, "stdin-answer.txt");
+    fs.writeFileSync(stdinFile, "y\n");
+    const realStdinFd = 0;
+    fs.closeSync(realStdinFd);
+    const replacement = fs.openSync(stdinFile, "r");
+    try {
+      expect(replacement).toBe(realStdinFd);
+      mergeIo.prompt("Merge? [y/N] ");
+      expect(out).toHaveBeenCalledWith("Merge? [y/N] ");
+      expect(mergeIo.readLine()).toBe("y\n");
+    } finally {
+      vi.restoreAllMocks();
+      fs.closeSync(replacement);
+      fs.openSync("/dev/null", "r"); // leave a readable fd 0 behind
+    }
   });
 });

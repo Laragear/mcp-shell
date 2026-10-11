@@ -28,6 +28,18 @@ describe("doctor report", () => {
     expect(report).toContain("Merge: trusted store groups override");
   });
 
+  it("lists the agent file and the project proposal when present", () => {
+    const report = doctorReport(
+      cfg({
+        agentPath: "/home/.agents/mcp-shell/proj/agent.yaml",
+        proposalPath: "/proj/.agents/shell-runner.yaml",
+      }),
+    );
+    expect(report).toContain("Agent file: /home/.agents/mcp-shell/proj/agent.yaml");
+    expect(report).toContain("Proposal: /proj/.agents/shell-runner.yaml");
+    expect(report).toContain("`--merge`");
+  });
+
   it("lists every issue with its index", () => {
     const report = doctorReport(
       cfg({ issues: ['group "g": must be a mapping', "config declares no commands"] }),
