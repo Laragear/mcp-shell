@@ -33,6 +33,11 @@ jobs:
         if: github.event.release.tag_name
         run: npm version ${{ github.event.release.tag_name }} --no-git-tag-version --allow-same-version
 
+      - name: Debug OIDC Token
+        run: |
+          echo "NODE_AUTH_TOKEN is set: ${#NODE_AUTH_TOKEN}"
+          npm whoami
+
       # prepublishOnly runs lint + test (which builds), and prepack rebuilds
       # the mcp/ output that ships in the tarball.
       - name: Publish package to NPM
