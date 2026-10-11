@@ -295,7 +295,10 @@ describe("runCli --merge", () => {
     proposal("");
     withEnv(env(), () => {
       fs.mkdirSync(path.dirname(storeConfigPath()), { recursive: true });
-      fs.writeFileSync(storeConfigPath(), "g:\n  commands:\n    - label: Old\n      command: echo\n");
+      fs.writeFileSync(
+        storeConfigPath(),
+        "g:\n  commands:\n    - label: Old\n      command: echo\n",
+      );
     });
     answer("y\n");
     expect(withEnv(env(), () => runCli(["--merge"]))).toBe(0);
