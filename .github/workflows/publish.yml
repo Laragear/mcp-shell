@@ -25,7 +25,6 @@ jobs:
           scope: "@laragear"
           registry-url: "https://registry.npmjs.org"
           package-manager-cache: false
-          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install dependencies npm in CI/CD
         run: npm ci
@@ -38,3 +37,5 @@ jobs:
       # the mcp/ output that ships in the tarball.
       - name: Publish package to NPM
         run: npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
