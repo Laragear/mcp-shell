@@ -111,6 +111,9 @@ function validateSharedFields(where: string, spec: any, issues: string[]): void 
   ) {
     issues.push(`${where}: "env" must be a mapping of NAME: value`);
   }
+  if (spec.env_inherit !== undefined && typeof spec.env_inherit !== "boolean") {
+    issues.push(`${where}: "env_inherit" must be true or false`);
+  }
 }
 
 /** Validates one command spec. False when the command is unusable and must

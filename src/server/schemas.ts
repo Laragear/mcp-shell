@@ -32,6 +32,7 @@ export const saveCommandInput = z.object({
   description: z.string().optional(),
   args: z.union([z.boolean(), z.array(ARG_SPEC)]).optional(),
   env: z.record(z.string(), z.unknown()).optional(),
+  env_inherit: z.boolean().optional(),
   timeout: z.number().optional(),
   cwd: z.string().optional(),
   pipe: z.string().optional(),

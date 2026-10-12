@@ -282,12 +282,13 @@ You may cancel a running tool call, and so may the agent or the client. The serv
 | `args`                                | `false` by default. `true` allows free-form arguments. A list declares named arguments.                 |
 | `description`                         | Refines the tool description shown to the agent.                                                        |
 | `env`, `timeout`, `cwd`, `max_output` | Per-command overrides.                                                                                  |
+| `env_inherit`                         | `true` by default. `false` cuts the inherited environment down to the declared `env`.                   |
 | `pipe`                                | Second command piped after stdout, the tool result is its output and the exit code stays the command's. |
 | `check`                               | Success rules on the output: `contains`, `not_contains`, `regex` and `not_regex`.                       |
 | `output_to`                           | Opt-in raw output to a file. Disabled by default, because output can carry secrets.                     |
 | `read_only`, `destructive`            | Hints for the client, surfaced as MCP annotations.                                                      |
 
-Group keys work the same way, one level up: `description`, `trigger`, `env`, `timeout`, `cwd` and `commands`, which is required.
+Group keys work the same way, one level up: `description`, `trigger`, `env`, `env_inherit`, `timeout`, `cwd` and `commands`, which is required.
 
 ### Timeouts and output size
 
@@ -300,6 +301,20 @@ defaults:
 ```
 
 Raise the timeout for slow commands, like a full build with coverage. Lower `max_output` for commands that spew thousands of lines, since the result gets truncated and the agent only needs the tail anyway.
+
+### Environment variables
+
+Commands run with your environment plus whatever `env` you configure, where group `env` is overridden by command `env`.
+
+You may cut the inherited environment with `env_inherit: false`. The command then runs only with the declared `env`, which is useful for builds that must not see your local settings. `PATH` and `HOME` still come from the parent, so the shell and relative paths keep working. Like every override, `command > group > defaults` decides which value wins.
+
+```yaml
+- label: Hermetic build
+  command: make
+  env_inherit: false
+  env:
+    CI: true
+```
 
 ### Tool naming
 

@@ -24,5 +24,10 @@ export function effectiveLimits(
     Number(defaults?.max_output) ||
     Number(process.env.SHELL_RUNNER_MAX_OUTPUT) ||
     20000;
-  return { timeoutSec, maxChars, outputTo: resolveOutputTo(cmd, group, defaults) };
+  // Only a real boolean is honored; anything else falls through and is
+  // reported as a config issue by validation.
+  const bool = (v: unknown): boolean | undefined => (typeof v === "boolean" ? v : undefined);
+  const envInherit =
+    bool(cmd?.env_inherit) ?? bool(group?.env_inherit) ?? bool(defaults?.env_inherit) ?? true;
+  return { timeoutSec, maxChars, envInherit, outputTo: resolveOutputTo(cmd, group, defaults) };
 }

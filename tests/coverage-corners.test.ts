@@ -158,6 +158,69 @@ describe("tools corners", () => {
     expect(fs.readdirSync(dir).length).toBeGreaterThan(0);
   });
 
+  it("stops parent env inheritance with env_inherit: false", async () => {
+    const { tools, cfg: c } = withEnv({ SR_PARENT_ONLY: "42" }, () =>
+      toolsFor(
+        [
+          "g:",
+          "  commands:",
+          "    - label: N",
+          '      command: echo MINE=$SR_MINE PARENT=$SR_PARENT_ONLY PATH=$([ -n "$PATH" ] && echo set)',
+          "      env:",
+          "        SR_MINE: mine",
+          "      env_inherit: false",
+        ].join("\n"),
+      ),
+    );
+    const r = await runEntry(tools[0].entry, {}, c.defaults);
+    expect(r.text).toContain("MINE=mine");
+    expect(r.text).toContain("PATH=set");
+    expect(r.text).toContain("PARENT=");
+    expect(r.text).not.toContain("PARENT=42");
+  });
+
+  it("keeps PATH and HOME when inheritance is off without declared env", async () => {
+    const { tools, cfg: c } = toolsFor(
+      "g:\n  commands:\n    - label: N\n      command: printenv PATH\n      env_inherit: false\n",
+    );
+    const r = await runEntry(tools[0].entry, {}, c.defaults);
+    expect(r.isError).toBe(false);
+  });
+
+  it("resolves env_inherit through command, group and defaults precedence", async () => {
+    const config = (groupKey: string, cmdKey: string, defaults: string) =>
+      toolsFor(
+        [
+          ...(defaults ? [`defaults:`, `  ${defaults}`] : []),
+          "g:",
+          `  ${groupKey}`,
+          "  commands:",
+          "    - label: N",
+          "      command: echo PARENT=$SR_PARENT_ONLY",
+          `      ${cmdKey}`,
+        ].join("\n"),
+      );
+    const run = async (t: ReturnType<typeof toolsFor>) => {
+      const r = await runEntry(t.tools[0].entry, {}, t.cfg.defaults);
+      return r.text;
+    };
+    // Command true overrides a group false.
+    const both = config("env_inherit: false", "env_inherit: true", "");
+    await withEnv({ SR_PARENT_ONLY: "42" }, async () => {
+      expect(await run(both)).toContain("PARENT=42");
+    });
+    // Defaults false, nothing nearer: no inheritance.
+    const defaultsOnly = config("", "", "env_inherit: false");
+    await withEnv({ SR_PARENT_ONLY: "42" }, async () => {
+      expect(await run(defaultsOnly)).not.toContain("PARENT=42");
+    });
+    // Group true overrides defaults false.
+    const groupWins = config("env_inherit: true", "", "env_inherit: false");
+    await withEnv({ SR_PARENT_ONLY: "42" }, async () => {
+      expect(await run(groupWins)).toContain("PARENT=42");
+    });
+  });
+
   it("ignores blank descriptions and mentions file output only when the agent may opt in", () => {
     const blank = flattenTools({
       g: { commands: [{ label: "A", command: "echo", description: "  " }] },

@@ -22,6 +22,7 @@ export interface CommandSpec {
   description?: string;
   args?: boolean | ArgSpec[];
   env?: Record<string, unknown>;
+  env_inherit?: boolean;
   timeout?: number;
   cwd?: string;
   pipe?: string;
@@ -36,6 +37,7 @@ export interface GroupSpec {
   description?: string;
   trigger?: string;
   env?: Record<string, unknown>;
+  env_inherit?: boolean;
   timeout?: number;
   cwd?: string;
   output_to?: unknown;
@@ -69,6 +71,7 @@ export interface LoadedConfig {
 export interface Limits {
   timeoutSec: number;
   maxChars: number;
+  envInherit: boolean;
   outputTo: NormalizedOutputTo | null;
 }
 

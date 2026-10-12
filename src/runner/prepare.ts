@@ -35,7 +35,7 @@ export function prepareRun(
   if (typeof command !== "string") {
     return { error: { isError: true, text: command.error } };
   }
-  const { timeoutSec, maxChars, outputTo } = effectiveLimits(
+  const { timeoutSec, maxChars, envInherit, outputTo } = effectiveLimits(
     cmd as CommandSpec,
     group as GroupSpec,
     defaults,
@@ -57,7 +57,7 @@ export function prepareRun(
     tee,
     opts: {
       cwd: cmd.cwd || group.cwd || process.env.SHELL_RUNNER_CWD || process.cwd(),
-      env: runEnv(group as GroupSpec, cmd as CommandSpec),
+      env: runEnv(group as GroupSpec, cmd as CommandSpec, envInherit),
       timeoutMs: timeoutSec * 1000,
       maxChars,
       signal,
@@ -81,11 +81,21 @@ function agentNotAllowed(
   return "";
 }
 
-/** The environment for the run: process env plus group then command env. */
-function runEnv(group: GroupSpec, cmd: CommandSpec): NodeJS.ProcessEnv {
+/** The environment for the run: process env plus group then command env. With
+ * inheritance off, only the declared env is passed, plus PATH and HOME from
+ * the parent so /bin/sh and cwd resolution keep working. */
+function runEnv(group: GroupSpec, cmd: CommandSpec, inherit: boolean): NodeJS.ProcessEnv {
   const env: Record<string, string> = {};
   for (const [k, v] of Object.entries(group.env || {})) env[k] = String(v);
   for (const [k, v] of Object.entries(cmd.env || {})) env[k] = String(v);
+  if (!inherit) {
+    const minimal: Record<string, string> = {};
+    for (const key of ["PATH", "HOME"]) {
+      const v = process.env[key];
+      if (v !== undefined) minimal[key] = v;
+    }
+    return { ...minimal, ...env };
+  }
   return { ...process.env, ...env };
 }
 

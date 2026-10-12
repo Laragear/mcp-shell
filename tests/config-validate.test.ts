@@ -133,6 +133,7 @@ describe("config validation messages", () => {
         "      timeout: 0",
         "      cwd: 5",
         "      env: [1]",
+        "      env_inherit: nope",
         "      pipe: '  '",
         "    - 5",
         "    - name: ''",
@@ -142,6 +143,7 @@ describe("config validation messages", () => {
     expect(issues.some((i) => i.includes('"timeout" must be a positive number'))).toBe(true);
     expect(issues.some((i) => i.includes('"cwd" must be a string'))).toBe(true);
     expect(issues.some((i) => i.includes('"env" must be a mapping'))).toBe(true);
+    expect(issues.some((i) => i.includes('"env_inherit" must be true or false'))).toBe(true);
     expect(issues.some((i) => i.includes('"pipe" must be a non-empty command string'))).toBe(true);
     expect(issues.some((i) => i.includes(": must be a mapping"))).toBe(true);
     expect(issues.some((i) => i.includes('missing non-empty "label"'))).toBe(true);
@@ -159,6 +161,7 @@ describe("config validation messages", () => {
         "  timeout: nope",
         "  cwd: 7",
         "  env: nope",
+        "  env_inherit: 3",
       ].join("\n"),
     );
     expect(issues.some((i) => i.includes('group "g1": must be a mapping'))).toBe(true);
@@ -166,6 +169,7 @@ describe("config validation messages", () => {
     expect(issues.filter((i) => i.includes('"timeout" must be a positive number')).length).toBe(1);
     expect(issues.some((i) => i.includes('"cwd" must be a string'))).toBe(true);
     expect(issues.some((i) => i.includes('"env" must be a mapping'))).toBe(true);
+    expect(issues.some((i) => i.includes('"env_inherit" must be true or false'))).toBe(true);
   });
 });
 

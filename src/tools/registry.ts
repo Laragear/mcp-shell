@@ -63,6 +63,11 @@ const SAVE_COMMAND_PROPERTIES: Record<string, any> = {
     description: "false (default), true for free-form arguments, or a named-argument list",
   },
   env: { type: "object", description: "Extra environment variables, NAME: value" },
+  env_inherit: {
+    type: "boolean",
+    description:
+      "false runs the command only with its declared env (PATH and HOME survive); default inherits the parent environment",
+  },
   timeout: { type: "number", description: "Seconds before the command is killed" },
   cwd: { type: "string", description: "Working directory" },
   pipe: {

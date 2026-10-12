@@ -82,6 +82,7 @@ function emitAgentCommand(cmd: any): string[] {
   }
   if (cmd.timeout !== undefined) out.push(`      timeout: ${scalar(cmd.timeout)}`);
   if (cmd.cwd !== undefined) out.push(`      cwd: ${yamlScalar(cmd.cwd)}`);
+  if (cmd.env_inherit !== undefined) out.push(`      env_inherit: ${scalar(cmd.env_inherit)}`);
   if (cmd.pipe !== undefined) out.push(`      pipe: ${yamlScalar(cmd.pipe)}`);
   if (cmd.check && Object.keys(cmd.check).length) {
     out.push("      check:");

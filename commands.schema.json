@@ -22,6 +22,11 @@
         "output_to": {
           "$ref": "#/definitions/outputTo",
           "description": "Opt-in raw output to a file. Disabled by default: file output can persist secrets a command prints. Nearest definition (command > group > defaults) wins wholesale."
+        },
+        "env_inherit": {
+          "type": "boolean",
+          "default": true,
+          "description": "When false, commands run only with the declared env mappings (PATH and HOME still come from the parent so the shell keeps working)."
         }
       },
       "additionalProperties": false
@@ -116,6 +121,11 @@
       "output_to": {
         "$ref": "#/definitions/outputTo"
       },
+      "env_inherit": {
+        "type": "boolean",
+        "default": true,
+        "description": "When false, commands in this group run only with the declared env mappings (PATH and HOME still come from the parent so the shell keeps working)."
+      },
       "commands": {
         "type": "array",
         "items": {
@@ -185,7 +195,7 @@
             },
             "env": {
               "type": "object",
-              "description": "Environment variables for this command only (overrides group env).",
+              "description": "Environment variables for this command only (overrides group env). Values may use ${VAR} to expand a variable from the parent environment.",
               "additionalProperties": {
                 "type": [
                   "string",
@@ -193,6 +203,11 @@
                   "boolean"
                 ]
               }
+            },
+            "env_inherit": {
+              "type": "boolean",
+              "default": true,
+              "description": "When false, this command runs only with the declared env mappings (PATH and HOME still come from the parent so the shell keeps working)."
             },
             "timeout": {
               "type": "number",
