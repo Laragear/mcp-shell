@@ -131,10 +131,10 @@ The package ships a JSON Schema of the config file, `commands.schema.json`, next
 
 1. `./node_modules/@laragear/mcp-shell/commands.schema.json`, when the package is installed in the project
 2. `.agents/commands.schema.json`, when you dumped the schema there yourself
-3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@latest/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
+3. `https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@1/commands.schema.json`, the pinned CDN copy, for pure `npx` setups
 
 ```yaml
-# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@latest/commands.schema.json
+# yaml-language-server: $schema=https://cdn.jsdelivr.net/npm/@laragear/mcp-shell@1/commands.schema.json
 ```
 
 Keep that line as the first line of your `shell-runner.yaml` and any editor with YAML language support (VS Code, JetBrains, Zed, Neovim with yaml-language-server) gives you completion, key descriptions and validation as you type. It is committable, so everyone on the project gets the same hints.
@@ -179,7 +179,7 @@ An optional argument that needs its own flag does not have to live in the comman
       suffix: ":rw"              # mounts read-write
 ```
 
-With both arguments present this runs `docker run img --memory '512m' 'data':rw`. An argument may carry a `prefix`, a `suffix` or both, and they combine with `{placeholders}` like any other argument.
+With both arguments present this runs `docker run img --memory 512m data:rw`. An argument may carry a `prefix`, a `suffix` or both, and they combine with `{placeholders}` like any other argument.
 
 > [!NOTE]
 >
@@ -339,17 +339,17 @@ The `nature` key is a semaphore that says what a command is. It takes one of thr
 
 ### Command keys
 
-| Key                                   | Meaning.                                                                                                |
-|---------------------------------------|---------------------------------------------------------------------------------------------------------|
-| `label` (required)                    | Short human-readable label, slugged into the tool name.                                                 |
-| `command` (required)                  | The command line, run through the shell. Pipes and redirects work.                                      |
-| `args`                                | `false` by default. `true` takes free-form arguments as an array of strings. A list declares named arguments. |
-| `description`                         | Refines the tool description shown to the agent.                                                        |
-| `env`, `timeout`, `cwd`, `max_output` | Per-command overrides.                                                                                  |
-| `env_inherit`                         | `true` by default. `false` cuts the inherited environment down to the declared `env`.                   |
-| `pipe`                                | Second command piped after stdout, the tool result is its output and the exit code stays the command's. |
-| `check`                               | Success rules on the output: `contains`, `not_contains`, `regex` and `not_regex`.                       |
-| `output_to`                           | Opt-in raw output to a file. Disabled by default, because output can carry secrets.                     |
+| Key                                   | Meaning.                                                                                                          |
+|---------------------------------------|-------------------------------------------------------------------------------------------------------------------|
+| `label` (required)                    | Short human-readable label, slugged into the tool name.                                                           |
+| `command` (required)                  | The command line, run through the shell. Pipes and redirects work.                                                |
+| `args`                                | `false` by default. `true` takes free-form arguments as an array of strings. A list declares named arguments.     |
+| `description`                         | Refines the tool description shown to the agent.                                                                  |
+| `env`, `timeout`, `cwd`, `max_output` | Per-command overrides.                                                                                            |
+| `env_inherit`                         | `true` by default. `false` cuts the inherited environment down to the declared `env`.                             |
+| `pipe`                                | Second command piped after stdout, the tool result is its output and the exit code stays the command's.           |
+| `check`                               | Success rules on the output: `contains`, `not_contains`, `regex` and `not_regex`.                                 |
+| `output_to`                           | Opt-in raw output to a file. Disabled by default, because output can carry secrets.                               |
 | `nature`                              | Semaphore: `read_only`, `normal` (default) or `destructive`. Replaces the legacy `read_only`/`destructive` flags. |
 
 Group keys work the same way, one level up: `description`, `trigger`, `env`, `env_inherit`, `timeout`, `cwd` and `commands`, which is required.
@@ -364,7 +364,7 @@ defaults:
   max_output: 20000
 ```
 
-Raise the timeout for slow commands, like a full build with coverage. Lower `max_output` for commands that spew thousands of lines, since the result gets truncated and the agent only needs the tail anyway.
+Raise the `timeout` for slow commands, like a full build with coverage. Lower `max_output` for commands that spew thousands of lines, since the result gets truncated and the agent only needs the tail anyway.
 
 ### Environment variables
 
