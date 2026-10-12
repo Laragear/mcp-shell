@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { YamlError, parseYaml } from "../src/yaml/index.js";
+import { YamlError, parseYaml } from "../../src/yaml/index.js";
 
 /** The YamlError message of input that must fail to parse. */
 function errorOf(text: string): string {

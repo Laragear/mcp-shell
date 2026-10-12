@@ -12,8 +12,8 @@ import {
   validateAgentProposal,
   withAgentLock,
   writeAgentGroups,
-} from "../src/config/index.js";
-import { makeTmp, withEnv } from "./helpers.js";
+} from "../../src/config/index.js";
+import { makeTmp, withEnv } from "../helpers.js";
 
 const tmp = makeTmp("sr-agent-");
 const home = makeTmp("sr-agent-home-");
@@ -325,7 +325,7 @@ describe("agent file discovery and merge", () => {
   });
 
   it("keeps the doctor report working when the agent file is unreadable", async () => {
-    const { doctorReport } = await import("../src/report/index.js");
+    const { doctorReport } = await import("../../src/report/index.js");
     const bad = path.join(tmp, "bad-agent.yaml");
     fs.writeFileSync(bad, "a: &anchor b\n");
     const report = doctorReport({

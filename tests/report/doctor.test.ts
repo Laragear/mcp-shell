@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { doctorReport } from "../src/report/index.js";
-import type { LoadedConfig } from "../src/config/index.js";
+import { doctorReport } from "../../src/report/index.js";
+import type { LoadedConfig } from "../../src/config/index.js";
 
 /** A LoadedConfig built by hand, so every report branch is reachable. */
 function cfg(overrides: Partial<LoadedConfig>): LoadedConfig {
@@ -109,4 +109,87 @@ describe("doctor report", () => {
     expect(report).toContain('regex=["\\\\d+","x"]');
     expect(report).not.toContain("accepts arguments");
   });
+});
+
+describe("doctor report corners", () => {
+  it("renders group output_to alone and skips a blank parse stage", () => {
+    const report = doctorReport(
+      cfg({
+        paths: ["cfg.yaml"],
+        groups: {
+          g: {
+            output_to: "logs/",
+            commands: [{ label: "A", command: "echo", pipe: "   " }],
+          },
+        },
+      }),
+    );
+    expect(report).toContain('Group settings: output_to="logs/"');
+    expect(report).not.toContain("parse:");
+  });
+
+  it("renders group timeout and cwd without output_to, and scalar check values", () => {
+    const report = doctorReport(
+      cfg({
+        paths: ["cfg.yaml"],
+        groups: {
+          g: {
+            timeout: 5,
+            cwd: "./x",
+            commands: [{ label: "A", command: "echo", check: { contains: "ok" } }],
+          },
+        },
+      }),
+    );
+    expect(report).toContain("Group settings: timeout=5s, cwd=./x");
+    expect(report).not.toContain("output_to=");
+    expect(report).toContain('check: contains=["ok"]');
+  });
+
+  it("tolerates a null group map", () => {
+    expect(doctorReport(cfg({ groups: null as any }))).toContain("Built-in tools:");
+  });
+});
+
+describe("doctor extras", () => {
+  it("renders a group with no description or trigger", () => {
+    const report = doctorReport({
+      path: null,
+      paths: ["x"],
+      groups: { g: { commands: [{ label: "A", command: "echo" }] } },
+      defaults: {},
+      issues: [],
+    });
+    expect(report).toContain("## g");
+    expect(report).not.toContain("Group settings:");
+  });
+});
+
+describe("doctor report secrets", () => {
+  it("never shows declared env values in the doctor report", () => {
+    const report = doctorReport(
+      cfg({
+        groups: {
+          g: {
+            env: { SECRET: "plain" },
+            commands: [{ label: "A", command: "echo" }],
+          },
+        },
+      }),
+    );
+    expect(report).not.toContain("plain");
+  });
+});
+
+it("shows the effective truncate shape in the doctor report", () => {
+  const report = doctorReport(
+    cfg({
+      groups: {
+        g: {
+          commands: [{ label: "A", command: "echo", output: { truncate: { bytes: 99 } } }],
+        },
+      },
+    }),
+  );
+  expect(report).toContain("truncate: last 99 bytes");
 });

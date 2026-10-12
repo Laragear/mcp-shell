@@ -1,14 +1,14 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { toolsFor } from "./helpers.js";
+import { toolsFor } from "../helpers.js";
 
 // The orchestration paths that a real /bin/sh spawn cannot reach
 // deterministically: spawn errors in either stage.
 const spawnStage = vi.fn();
-vi.mock("../src/runner/process.js", () => ({
+vi.mock("../../src/runner/process.js", () => ({
   spawnStage: (...args: unknown[]) => spawnStage(...args),
 }));
 
-import { runEntry } from "../src/runner/index.js";
+import { runEntry } from "../../src/runner/index.js";
 
 const { tools, cfg } = toolsFor(
   "g:\n  commands:\n    - label: Piped\n      command: echo hi\n      pipe: tail -1\n",

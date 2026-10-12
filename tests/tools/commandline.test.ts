@@ -1,9 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { argMode, buildCommandline, flattenTools, previewCommandline } from "../src/tools/index.js";
-import { slug } from "../src/support.js";
-import { toolsFor } from "./helpers.js";
+import { argMode, buildCommandline, previewCommandline } from "../../src/tools/index.js";
+import { slug } from "../../src/support.js";
+import { toolsFor } from "../helpers.js";
 
-/** The declared tool (built-ins filtered) for a config text. */
 function oneTool(text: string) {
   const { tools } = toolsFor(text);
   return tools[0];
@@ -164,94 +163,115 @@ describe("buildCommandline", () => {
   });
 });
 
-describe("flattenTools edge cases", () => {
-  it("skips malformed groups and commands without throwing", () => {
-    const tools = flattenTools({
-      bad: null,
-      empty: { description: "no commands" },
-      junk: {
-        commands: [
-          null,
-          "x",
-          { label: "A" },
-          { label: "B", command: "  " },
-          { label: "C", command: "echo" },
-        ],
-      },
-    } as any);
-    expect(tools.map((t) => t.schema.name)).toContain("junk__c");
-    expect(tools.filter((t) => !("builtin" in t.entry))).toHaveLength(1);
+describe("buildCommandline", () => {
+  it("shell-quotes free arguments (no injection)", () => {
+    const { tools } = toolsFor(
+      "g:\n  commands:\n    - label: E\n      command: echo\n      args: true\n",
+    );
+    expect(buildCommandline(tools[0].entry as any, ["safe", "bad; rm -rf /"])).toBe(
+      "echo 'safe' 'bad; rm -rf /'",
+    );
   });
 
-  it("suffixes colliding names and titles come from the label", () => {
-    const tools = flattenTools({
-      g: {
-        commands: [
-          { label: "A", command: "echo" },
-          { label: "A", command: "echo" },
-        ],
-      },
-    });
-    const declared = tools.filter((t) => !("builtin" in t.entry));
-    expect(declared.map((t) => t.schema.name)).toEqual(["g__a", "g__a_2"]);
-    expect(declared[0].schema.title).toBe("A");
-    expect(declared[1].schema.title).toBe("A");
+  it("keeps order, applies defaults and enforces required named args", () => {
+    const { tools } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: E",
+        "      command: run",
+        "      args:",
+        "        - name: a",
+        "          required: true",
+        "        - name: b",
+        "          default: x",
+        "        - name: c",
+      ].join("\n"),
+    );
+    const entry = tools[0].entry as any;
+    expect(buildCommandline(entry, { a: "1" })).toBe("run '1' 'x'");
+    expect(buildCommandline(entry, { a: "1", b: "2", c: "3" })).toBe("run '1' '2' '3'");
+    expect((buildCommandline(entry, {}) as any).error).toMatch(/Missing required argument "a"/);
+    expect((buildCommandline(entry, { a: "1", zz: "9" }) as any).error).toMatch(
+      /Unknown argument "zz"/,
+    );
   });
 
-  it("reports a command that is both read_only and destructive and gates it as destructive", () => {
-    const { tools, cfg } = toolsFor(
-      "g:\n  commands:\n    - label: A\n      command: echo\n      read_only: true\n      destructive: true\n",
+  it("glues prefix and suffix around quoted values and omits absent optionals", () => {
+    const { tools } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: Docker",
+        "      command: docker run img",
+        "      args:",
+        "        - name: memory",
+        '          prefix: "--memory "',
+        "        - name: mode",
+        '          suffix: ":rw"',
+        "        - name: plain",
+        "          required: true",
+      ].join("\n"),
     );
-    expect(
-      cfg.issues.some((i) => i.includes('"read_only" and "destructive" cannot both be true')),
-    ).toBe(true);
-    expect(tools).toHaveLength(1);
-    expect(tools[0].schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
-      type: "boolean",
-    });
+    const entry = tools[0].entry as any;
+    expect(buildCommandline(entry, { plain: "x" })).toBe("docker run img 'x'");
+    expect(buildCommandline(entry, { plain: "x", memory: "512m" })).toBe(
+      "docker run img --memory '512m' 'x'",
+    );
+    expect(buildCommandline(entry, { plain: "x", mode: "rw" })).toBe("docker run img 'rw':rw 'x'");
+    expect(buildCommandline(entry, { plain: "x", memory: "512m", mode: "rw" })).toBe(
+      "docker run img --memory '512m' 'rw':rw 'x'",
+    );
   });
 
-  it("adds the consent argument and description to a destructive tool", () => {
-    const tool = oneTool(
-      "g:\n  commands:\n    - label: A\n      command: echo\n      destructive: true\n",
+  it("fills placeholders in place and appends leftovers", () => {
+    const { tools } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: Checkout",
+        "      command: git checkout {branch} --",
+        "      args:",
+        "        - name: branch",
+        "          required: true",
+        "        - name: verbose",
+        "          default: --quiet",
+      ].join("\n"),
     );
-    expect(tool.schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
-      type: "boolean",
-    });
-    expect(tool.schema.description).toContain("acknowledge_destructive");
-    expect(tool.schema.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+    const entry = tools[0].entry as any;
+    expect(buildCommandline(entry, { branch: "main" })).toBe("git checkout 'main' -- '--quiet'");
+    expect(buildCommandline(entry, { branch: "a b", verbose: "-v" })).toBe(
+      "git checkout 'a b' -- '-v'",
+    );
+    expect((buildCommandline(entry, {}) as any).error).toMatch(
+      /Missing required argument "branch"/,
+    );
+    expect(previewCommandline(entry)).toMatch(/git checkout '<branch>' -- 'verbose=--quiet'/);
   });
 
-  it("keeps read_only and destructive flags without conflicts as plain annotations", () => {
-    const tool = oneTool(
-      "g:\n  commands:\n    - label: A\n      command: echo\n      read_only: true\n",
+  it("supports mid-command placeholders", () => {
+    const { tools } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: Ns",
+        "      command: kubectl --namespace {ns} get pods",
+        "      args:",
+        "        - name: ns",
+        "          required: true",
+      ].join("\n"),
     );
-    expect(tool.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
-    expect(tool.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
+    expect(buildCommandline(tools[0].entry as any, { ns: "prod" })).toBe(
+      "kubectl --namespace 'prod' get pods",
+    );
   });
 
-  it("maps the nature semaphore onto hints, description and consent", () => {
-    const readOnly = oneTool(
-      "g:\n  commands:\n    - label: A\n      command: echo\n      nature: read_only\n",
+  it("keeps the parse stage out of the command line (the runner pipes it)", () => {
+    const { tools } = toolsFor(
+      "g:\n  commands:\n    - label: P\n      command: cat f | sort\n      pipe: wc -l\n",
     );
-    expect(readOnly.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
-    expect(readOnly.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
-
-    const destructive = oneTool(
-      "g:\n  commands:\n    - label: B\n      command: echo\n      nature: destructive\n",
-    );
-    expect(destructive.schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
-      type: "boolean",
-    });
-    expect(destructive.schema.description).toContain("acknowledge_destructive");
-    expect(destructive.schema.annotations).toEqual({
-      readOnlyHint: false,
-      destructiveHint: true,
-    });
-
-    const normal = oneTool("g:\n  commands:\n    - label: C\n      command: echo\n");
-    expect(normal.schema.annotations).toEqual({ readOnlyHint: false, destructiveHint: true });
-    expect(normal.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
+    expect(previewCommandline(tools[0].entry as any)).toBe("cat f | sort | wc -l");
+    expect(buildCommandline(tools[0].entry as any, undefined)).toBe("cat f | sort");
   });
 });
 
@@ -276,5 +296,28 @@ describe("slug", () => {
   it("slugifies names and falls back to cmd when nothing survives", () => {
     expect(slug("Run All Tests!")).toBe("run_all_tests");
     expect(slug("///")).toBe("label");
+  });
+});
+
+describe("commandline corners", () => {
+  it("handles placeholders without a declared argument", () => {
+    const entry = {
+      cmd: { command: "echo {gone}", label: "X" },
+      args: { mode: "named" as const, specs: [{ name: "other", required: true }] },
+    } as any;
+    expect(previewCommandline(entry)).toContain("{gone}");
+    expect(buildCommandline(entry, { other: "x" })).toEqual({
+      error: 'Placeholder "{gone}" has no matching named argument.',
+    });
+  });
+
+  it("treats non-object named arguments as no values", () => {
+    const entry = {
+      cmd: { command: "echo {a}", label: "X" },
+      args: { mode: "named" as const, specs: [{ name: "a", required: true }] },
+    } as any;
+    expect(buildCommandline(entry, "scalar")).toEqual({
+      error: 'Missing required argument "a".',
+    });
   });
 });

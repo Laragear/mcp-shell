@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { parseYaml } from "../src/yaml/index.js";
+import { parseYaml } from "../../src/yaml/index.js";
 
 describe("yaml parser", () => {
   it("parses nested mappings with scalars, booleans and comments", () => {
@@ -83,3 +83,41 @@ describe("yaml parser", () => {
     expect(() => parseYaml("good: 1\noops")).toThrow(/line 2/);
   });
 });
+
+describe("yaml parser corners", () => {
+  it("parses null-ish scalars and an empty flow value", () => {
+    expect(parseYamlRaw("a: ~")).toEqual({ a: null });
+    expect(parseYamlRaw("a: {x: }")).toEqual({ a: { x: null } });
+  });
+
+  it("parses a value-less key at the end of the document", () => {
+    expect(parseYamlRaw("a:\n")).toEqual({ a: null });
+  });
+
+  it("rejects anchors and aliases", () => {
+    expect(() => parseYamlRaw("a: &x 1")).toThrow(/anchors\/aliases/);
+    expect(() => parseYamlRaw("a: *x")).toThrow(/anchors\/aliases/);
+  });
+
+  it("handles an empty block scalar body followed by a dedent", () => {
+    expect(parseYamlRaw("t: |\na: 1")).toEqual({ t: "", a: 1 });
+  });
+
+  it("supports folded keep chomping", () => {
+    expect(parseYamlRaw("t: >+\n  a\n")).toEqual({ t: "a\n\n" });
+  });
+
+  it("keeps blank lines between mappings and rejects non-string keys", () => {
+    expect(parseYamlRaw("a: 1\n\nb: 2")).toEqual({ a: 1, b: 2 });
+    expect(() => parseYamlRaw("1: x")).toThrow("mapping key must be a string");
+  });
+
+  it("parses a null value before a dedented key", () => {
+    expect(parseYamlRaw("a:\nb: 1")).toEqual({ a: null, b: 1 });
+  });
+});
+
+/** parseYaml with a short local alias. */
+function parseYamlRaw(text: string): any {
+  return parseYaml(text);
+}

@@ -2,9 +2,9 @@ import { afterAll, describe, expect, it } from "vitest";
 import { Client } from "@prefecthq/fastmcp-ts/client";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ShellRunnerServer } from "../src/server/index.js";
-import { agentConfigPath, removeAgentCommand, storeConfigPath } from "../src/config/index.js";
-import { makeTmp, withEnv } from "./helpers.js";
+import { ShellRunnerServer } from "../../src/server/index.js";
+import { agentConfigPath, removeAgentCommand, storeConfigPath } from "../../src/config/index.js";
+import { makeTmp, withEnv } from "../helpers.js";
 
 const tmp = makeTmp("sr-elicit-");
 const home = makeTmp("sr-elicit-home-");

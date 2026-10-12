@@ -1,10 +1,11 @@
-import { afterAll, describe, expect, it } from "vitest";
+import { afterAll, describe, expect, it, vi } from "vitest";
 import { Client } from "@prefecthq/fastmcp-ts/client";
 import * as fs from "node:fs";
 import * as path from "node:path";
-import { ShellRunnerServer } from "../src/server/index.js";
-import { loadConfig } from "../src/config/index.js";
-import { makeTmp, writeConfig } from "./helpers.js";
+import { Readable, Writable } from "node:stream";
+import { ShellRunnerServer } from "../../src/server/index.js";
+import { loadConfig } from "../../src/config/index.js";
+import { makeTmp, writeConfig } from "../helpers.js";
 
 const tmp = makeTmp("sr-session-");
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -258,4 +259,73 @@ describe("ShellRunnerServer over fastmcp", () => {
       s.restore();
     }
   });
+});
+
+describe("ShellRunnerServer wiring", () => {
+  it("survives a config signature that cannot be serialized", () => {
+    const tmp = makeTmp("sr-sig-");
+    const prev = process.env.SHELL_RUNNER_CONFIG;
+    process.env.SHELL_RUNNER_CONFIG = writeConfig(
+      tmp,
+      "g:\n  commands:\n    - label: Ok\n      command: echo\n",
+    );
+    try {
+      const srs = new ShellRunnerServer();
+      const circular: any = { text: "circular" };
+      circular.self = circular;
+      expect(srs.syncTools({ groups: {}, defaults: {}, issues: [circular] } as any)).toBe(true);
+      expect(srs.syncTools({ groups: {}, defaults: {}, issues: [circular] } as any)).toBe(false);
+    } finally {
+      if (prev === undefined) delete process.env.SHELL_RUNNER_CONFIG;
+      else process.env.SHELL_RUNNER_CONFIG = prev;
+      fs.rmSync(tmp, { recursive: true, force: true });
+    }
+  });
+
+  it("connects a caller-owned transport", async () => {
+    const srs = new ShellRunnerServer();
+    const transport = {
+      start: vi.fn(async () => {}),
+      send: vi.fn(async () => {}),
+      close: vi.fn(async () => {}),
+    };
+    await srs.connect(transport as any);
+    expect(transport.start).toHaveBeenCalled();
+  });
+
+  it("serves stdio on injected streams until stdin closes", async () => {
+    const srs = new ShellRunnerServer();
+    const chunks: string[] = [];
+    const stdin = new Readable({ read() {} });
+    stdin.push(
+      `${JSON.stringify({
+        jsonrpc: "2.0",
+        id: 1,
+        method: "initialize",
+        params: {
+          protocolVersion: "2024-11-05",
+          capabilities: {},
+          clientInfo: { name: "t", version: "0" },
+        },
+      })}\n`,
+    );
+    const run = srs.serve({
+      stdin,
+      stdout: new Writable({
+        write(chunk, _enc, cb) {
+          chunks.push(chunk.toString());
+          cb();
+        },
+      }),
+    });
+    // Give the initialize round-trip a moment, then end stdin: serve resolves
+    // when the transport closes.
+    await new Promise((d) => setTimeout(d, 200));
+    await vi.waitFor(() => expect(chunks.join()).toContain("shell-runner"));
+    stdin.push(null);
+    await Promise.race([
+      run,
+      new Promise((_, reject) => setTimeout(() => reject(new Error("serve hung")), 5000)),
+    ]);
+  }, 10000);
 });

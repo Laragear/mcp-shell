@@ -1,9 +1,15 @@
-import { loadConfig, normalizeOutputTo, validateConfig } from "../src/config/index.js";
 import { describe, expect, it } from "vitest";
 import * as fs from "node:fs";
 import * as os from "node:os";
 import * as path from "node:path";
-import { loadConfigFor, withEnv } from "./helpers.js";
+import { loadConfig, normalizeOutputTo, validateConfig } from "../../src/config/index.js";
+import { loadConfigFor, withEnv } from "../helpers.js";
+
+describe("validateConfig corners", () => {
+  it("tolerates a null group map", () => {
+    expect(validateConfig(null as any)).toEqual({ issues: [], validGroups: 0 });
+  });
+});
 
 /** The issues reported for a config text, through the real load path. */
 function issuesFor(text: string): string[] {
@@ -433,6 +439,49 @@ describe("output umbrella validation", () => {
       ].join("\n"),
     );
     expect(issues).toEqual([]);
+  });
+});
+
+describe("validation", () => {
+  it("reports missing label/command/commands instead of silently skipping", () => {
+    const { issues } = loadConfigFor(
+      `group:\n  commands:\n    - command: echo hi\n    - label: NoCmd\n`,
+    );
+    expect(issues.some((i) => /missing non-empty "label"/.test(i))).toBe(true);
+    expect(issues.some((i) => /missing non-empty "command"/.test(i))).toBe(true);
+  });
+
+  it("reports bad check rules and invalid regexes", () => {
+    const { issues } = loadConfigFor(
+      `g:\n  commands:\n    - label: X\n      command: echo\n      check:\n        wat: [a]\n        regex: ['[unclosed']\n`,
+    );
+    expect(issues.some((i) => /unknown check rule "wat"/.test(i))).toBe(true);
+    expect(issues.some((i) => /invalid regex/.test(i))).toBe(true);
+  });
+
+  it("reports placeholder/args mismatches", () => {
+    const ok = loadConfigFor(
+      "g:\n  commands:\n    - label: P\n      command: git checkout {branch}\n      args:\n        - name: branch\n          required: true\n",
+    );
+    expect(ok.issues).toEqual([]);
+    const missing = loadConfigFor(
+      "g:\n  commands:\n    - label: P\n      command: git checkout {branch}\n",
+    );
+    expect(
+      missing.issues.some((i) => /placeholder \{branch\} but declares no named arguments/.test(i)),
+    ).toBe(true);
+    const free = loadConfigFor(
+      "g:\n  commands:\n    - label: P\n      command: git checkout {branch}\n      args: true\n",
+    );
+    expect(free.issues.some((i) => /args: true" is ambiguous/.test(i))).toBe(true);
+  });
+
+  it("accepts a valid config and flags an empty one", () => {
+    expect(loadConfigFor("g:\n  commands:\n    - label: A\n      command: echo\n").issues).toEqual(
+      [],
+    );
+    const empty = loadConfigFor("g:\n  description: nothing here\n");
+    expect(empty.issues.some((i) => /no commands/.test(i))).toBe(true);
   });
 });
 
