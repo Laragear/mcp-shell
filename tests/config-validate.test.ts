@@ -297,6 +297,73 @@ describe("output umbrella validation", () => {
     );
     expect(issues).toEqual([]);
   });
+
+  it("validates the truncate sub-key forms", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output:",
+        "        truncate: 0",
+        "    - label: B",
+        "      command: echo",
+        "      output:",
+        "        truncate: nope",
+        "    - label: C",
+        "      command: echo",
+        "      output:",
+        "        truncate: {mode: middle, length: 5}",
+        "    - label: D",
+        "      command: echo",
+        "      output:",
+        "        truncate: {length: 5, bytes: 10}",
+        "    - label: E",
+        "      command: echo",
+        "      output:",
+        "        truncate: {mode: start}",
+        "    - label: F",
+        "      command: echo",
+        "      output:",
+        "        truncate: {length: -1}",
+      ].join("\n"),
+    );
+    expect(issues.filter((i) => i.includes('"truncate" must be a positive number'))).toHaveLength(
+      2,
+    );
+    expect(
+      issues.some((i) => i.includes('"truncate" must be a positive number or a mapping')),
+    ).toBe(true);
+    expect(issues.some((i) => i.includes('"truncate" "mode" must be "start" or "end"'))).toBe(true);
+    expect(issues.some((i) => i.includes("not both"))).toBe(true);
+    expect(
+      issues.some((i) => i.includes('needs a positive "length" (characters) or "bytes"')),
+    ).toBe(true);
+    expect(issues.some((i) => i.includes('"length" must be a positive number'))).toBe(true);
+  });
+
+  it("accepts every valid truncate form", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output:",
+        "        truncate: 500",
+        "    - label: B",
+        "      command: echo",
+        "      output:",
+        "        truncate: {mode: start, length: 10}",
+        "    - label: C",
+        "      command: echo",
+        "      output:",
+        "        truncate: {bytes: 4096}",
+      ].join("\n"),
+    );
+    expect(issues).toEqual([]);
+  });
 });
 
 describe("output_to validation", () => {

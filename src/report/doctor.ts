@@ -111,6 +111,12 @@ function reportGroup(
     if (t.entry.args.mode !== "none") extras.unshift("accepts arguments");
     const limits = effectiveLimits(cmd, group, cfg.defaults);
     if (limits.timeoutSec !== timeoutSec) extras.push(`timeout=${limits.timeoutSec}s`);
+    if (limits.truncate.kind !== "default") {
+      extras.push(
+        `truncate: ${limits.truncate.mode === "end" ? "last" : "first"} ` +
+          `${limits.truncate.limit} ${limits.truncate.kind === "bytes" ? "bytes" : "chars"}`,
+      );
+    }
     lines.push(
       `- ${t.schema.name}: \`${previewCommandline(t.entry)}\`${extras.length ? ` — ${extras.join("; ")}` : ""}`,
     );

@@ -53,6 +53,41 @@
           "type": "string",
           "minLength": 1,
           "description": "Second command that the first command's stdout is piped into. Alias of pipe."
+        },
+        "truncate": {
+          "description": "Shapes the tool result after the run. A number keeps the last N characters. A mapping keeps N characters (length) or bytes (bytes) from mode (default end). File output stays raw.",
+          "oneOf": [
+            {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "description": "Keep the last N characters of the output."
+            },
+            {
+              "type": "object",
+              "properties": {
+                "mode": {
+                  "type": "string",
+                  "enum": [
+                    "start",
+                    "end"
+                  ],
+                  "default": "end",
+                  "description": "Which end to keep: start keeps the first, end keeps the last."
+                },
+                "length": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "description": "How many characters to keep. Mutually exclusive with bytes."
+                },
+                "bytes": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "description": "How many bytes to keep, never cutting a multibyte character in half. Mutually exclusive with length."
+                }
+              },
+              "additionalProperties": false
+            }
+          ]
         }
       },
       "additionalProperties": false

@@ -60,16 +60,19 @@ function groupsFromParsed(parsed: any): {
 /**
  * Folds the output umbrella of one spec into its top-level aliases
  * ("output.to" becomes "output_to", "output.pipe" becomes "pipe"), so
- * everything downstream sees a single form. The umbrella itself is dropped.
+ * everything downstream sees a single form. "output.truncate" has no
+ * top-level alias and is kept as the umbrella's sole remaining key.
  * Validation has already reported same-level alias conflicts.
  */
 function coalesceOutput(spec: any): any {
   if (!spec || typeof spec !== "object" || Array.isArray(spec)) return spec;
   const output = spec.output;
   if (!output || typeof output !== "object" || Array.isArray(output)) return spec;
-  const { output: _dropped, ...rest } = spec;
+  const { output: _folded, ...rest } = spec;
+  const kept = output.truncate !== undefined ? { output: { truncate: output.truncate } } : {};
   return {
     ...rest,
+    ...kept,
     output_to: output.to !== undefined ? output.to : spec.output_to,
     pipe: output.pipe !== undefined ? output.pipe : spec.pipe,
   };

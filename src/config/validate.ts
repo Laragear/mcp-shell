@@ -118,11 +118,11 @@ function validateSharedFields(where: string, spec: any, issues: string[]): void 
 }
 
 /** The allowed keys of the output umbrella, and the top-level key each one
- * aliases. */
-export const OUTPUT_KEYS: Record<string, string> = { to: "output_to", pipe: "pipe" };
+ * aliases ("truncate" shapes the result only, it has no alias). */
+const OUTPUT_KEYS: Record<string, string> = { to: "output_to", pipe: "pipe", truncate: "" };
 
 /** Validates the output umbrella of a group or command: a mapping with known
- * keys only, no alias declared twice on the same level, and a valid `to`. */
+ * keys only, no alias declared twice on the same level, and valid sub-keys. */
 function validateOutputKey(where: string, spec: any, issues: string[]): void {
   const output = spec.output;
   if (output === undefined) return;
@@ -131,28 +131,61 @@ function validateOutputKey(where: string, spec: any, issues: string[]): void {
     return;
   }
   for (const key of Object.keys(output)) {
-    if (!OUTPUT_KEYS[key]) {
+    if (!(key in OUTPUT_KEYS)) {
       issues.push(
         `${where}: "output" has an unknown key "${key}" (allowed: ${Object.keys(OUTPUT_KEYS).join(", ")})`,
       );
     }
   }
-  const topAlias = (top: string) => `The key "${top}" is already declared here`;
   if (output.pipe !== undefined) {
     if (typeof output.pipe !== "string" || !output.pipe.trim()) {
       issues.push(`${where}: "output" "pipe" must be a non-empty command string`);
     }
     if (spec.pipe !== undefined) {
-      issues.push(`${where}: ${topAlias("pipe")}; "output" "pipe" and "pipe" are the same thing`);
+      issues.push(`${where}: "output" "pipe" and "pipe" are the same thing; declare one`);
     }
   }
   if (output.to !== undefined) {
     normalizeOutputTo(`${where} "output" "to"`, output.to, issues);
     if (spec.output_to !== undefined) {
-      issues.push(
-        `${where}: ${topAlias("output_to")}; "output" "to" and "output_to" are the same thing`,
-      );
+      issues.push(`${where}: "output" "to" and "output_to" are the same thing; declare one`);
     }
+  }
+  if (output.truncate !== undefined) {
+    validateTruncate(`${where} "output" "truncate"`, output.truncate, issues);
+  }
+}
+
+/** Validates one truncate declaration: a positive number of characters, or a
+ * mapping of mode plus exactly one of length/bytes. */
+function validateTruncate(where: string, t: unknown, issues: string[]): void {
+  const bad = (why: string) => issues.push(`${where} ${why}`);
+  if (typeof t === "number") {
+    if (!(t > 0)) bad("must be a positive number of characters");
+    return;
+  }
+  if (!t || typeof t !== "object" || Array.isArray(t)) {
+    bad("must be a positive number or a mapping of {mode, length|bytes}");
+    return;
+  }
+  const s = t as Record<string, unknown>;
+  if (s.mode !== undefined && s.mode !== "start" && s.mode !== "end") {
+    bad('"mode" must be "start" or "end"');
+  }
+  const hasLength = s.length !== undefined;
+  const hasBytes = s.bytes !== undefined;
+  if (hasLength && hasBytes) {
+    bad('accepts "length" (characters) or "bytes", not both');
+    return;
+  }
+  if (!hasLength && !hasBytes) {
+    bad('needs a positive "length" (characters) or "bytes"');
+    return;
+  }
+  const key = hasLength ? "length" : "bytes";
+  const v = s[key];
+  if (typeof v !== "number" || !(v > 0)) {
+    bad(`"${key}" must be a positive number`);
   }
 }
 

@@ -17,11 +17,30 @@ export interface CheckSpec {
 }
 
 /** The output umbrella: canonical home of file output (`to`, same shape as
- * output_to) and the pipe stage. Coalesced into the top-level keys at load. */
+ * output_to), the pipe stage and the truncation shape. Coalesced into the
+ * top-level keys at load. */
 export interface OutputSpec {
   [key: string]: unknown;
   to?: unknown;
   pipe?: unknown;
+  truncate?: number | TruncateSpec;
+}
+
+/** How output is cut down: keep `length` characters or `bytes` bytes from
+ * the start or the end of the stream. */
+export interface TruncateSpec {
+  [key: string]: unknown;
+  mode?: unknown;
+  length?: unknown;
+  bytes?: unknown;
+}
+
+/** The effective truncation shape of a run. "default" is the v1.0 behavior:
+ * keep the first `limit` characters. */
+export interface NormalizedTruncate {
+  kind: "default" | "chars" | "bytes";
+  mode: "start" | "end";
+  limit: number;
 }
 
 export interface CommandSpec {
@@ -82,6 +101,7 @@ export interface Limits {
   timeoutSec: number;
   maxChars: number;
   envInherit: boolean;
+  truncate: NormalizedTruncate;
   outputTo: NormalizedOutputTo | null;
 }
 

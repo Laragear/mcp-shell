@@ -202,6 +202,31 @@ describe("output_to validation and precedence", () => {
     const b = tools.find((t) => t.entry.cmd.label === "B");
     expect(b?.entry.cmd.pipe).toBe("cat");
   });
+
+  it("resolves output.truncate through command, group and defaults", () => {
+    // Numeric shorthand keeps the last characters.
+    expect(effectiveLimits({ output: { truncate: 500 } }, {}, {})).toMatchObject({
+      truncate: { kind: "chars", mode: "end", limit: 500 },
+    });
+    // The nearest output block wins as a whole.
+    const mixed = effectiveLimits(
+      {},
+      { output: { truncate: { mode: "start", length: 10 } } },
+      { output: { truncate: { bytes: 4096 } } },
+    );
+    expect(mixed.truncate).toEqual({ kind: "chars", mode: "start", limit: 10 });
+    const byDefault = effectiveLimits({}, {}, { output: { truncate: { bytes: 4096 } } });
+    expect(byDefault.truncate).toEqual({ kind: "bytes", mode: "end", limit: 4096 });
+    // Invalid forms fall back to the default shape (already reported).
+    expect(effectiveLimits({ output: { truncate: 0 } }, {}, {})).toMatchObject({
+      truncate: { kind: "default", mode: "start" },
+    });
+    expect(effectiveLimits({}, {}, {}).truncate).toEqual({
+      kind: "default",
+      mode: "start",
+      limit: 20000,
+    });
+  });
 });
 
 describe("discovery and merge", () => {

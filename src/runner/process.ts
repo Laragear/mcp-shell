@@ -2,6 +2,7 @@
 // timeout and cancellation. Killing lives in kill.ts.
 
 import { spawn } from "node:child_process";
+import type { NormalizedTruncate } from "../config/index.js";
 import { makeCollector } from "./capture.js";
 import { killTree, trackRunningChild } from "./kill.js";
 
@@ -22,6 +23,7 @@ export interface StageOptions {
   env?: NodeJS.ProcessEnv;
   timeoutMs: number;
   maxChars: number;
+  truncate?: NormalizedTruncate;
   signal?: AbortSignal;
   stage?: string;
   stdinChunks?: Buffer[];
@@ -33,8 +35,15 @@ export interface StageOptions {
  * collectors and the raw-output tee.
  */
 function startChild(command: string, opts: StageOptions, onChunk: StageOptions["onChunk"]) {
-  const out = makeCollector(opts.maxChars);
-  const err = makeCollector(opts.maxChars);
+  // No configured truncate shape: the v1.0 default keeps the first maxChars
+  // characters.
+  const plan = opts.truncate ?? {
+    kind: "default" as const,
+    mode: "start" as const,
+    limit: opts.maxChars,
+  };
+  const out = makeCollector(plan);
+  const err = makeCollector(plan);
   const child = spawn("/bin/sh", ["-c", command], {
     cwd: opts.cwd,
     env: opts.env,

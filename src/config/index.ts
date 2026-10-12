@@ -9,6 +9,9 @@ export type {
   Limits,
   LoadedConfig,
   NormalizedOutputTo,
+  NormalizedTruncate,
+  OutputSpec,
+  TruncateSpec,
 } from "./types.js";
 export { AGENT_FILENAME_RE, CHECK_RULES, OUTPUT_TO_EXTENSIONS } from "./types.js";
 export { agentsDir, homeDir, loadConfig, parseConfigFile, projectDir } from "./load.js";
@@ -33,4 +36,4 @@ export {
 } from "./agent.js";
 export { normalizeOutputTo, resolveOutputTo } from "./output.js";
 export { validateConfig } from "./validate.js";
-export { effectiveLimits } from "./limits.js";
+export { effectiveLimits, normalizeTruncate } from "./limits.js";

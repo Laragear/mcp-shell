@@ -249,6 +249,28 @@ You may gather the output behavior of a group or command under a single `output`
 
 Both forms are accepted everywhere, and you may mix them across levels, like `output.pipe` on the command and `output_to` on the group. On the same level, declare each behavior once: writing `pipe` and `output.pipe` together is a config problem `list_commands` reports.
 
+`output.truncate` shapes what the agent reads. A plain number keeps the **last** characters of the output, which is usually what matters: the error at the end of a wall of text.
+
+```yaml
+- label: Run build
+  command: npm run build
+  output:
+    truncate: 5000        # the agent reads the last 5000 characters
+```
+
+A mapping gives you the direction and the unit. `mode: start` keeps the first part of the output and `mode: end` keeps the last, and you choose characters with `length` or bytes with `bytes`, never both. Byte truncation never cuts a multibyte character in half.
+
+```yaml
+- label: Hex dump
+  command: xxd payload.bin
+  output:
+    truncate:
+      mode: start         # the header matters here
+      bytes: 4096
+```
+
+The result says what was cut with a `truncated` line, and `list_commands` shows the effective shape per command. Whatever `output.to` writes to a file stays raw, so truncation only shapes the conversation, never the record.
+
 > [!WARNING]
 >
 > Three channels leak secrets. The command line is visible in the process list while running, so pass secrets through `env` instead of arguments. Whatever the command prints reaches the conversation and the model provider. And a file written with `output_to` persists everything the command printed on disk. Keep `allow_agent` off for commands that handle credentials.

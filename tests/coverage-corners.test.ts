@@ -271,6 +271,63 @@ describe("tools corners", () => {
     expect(expandEnvVars(`${ref("1bad")} ${ref("_ok")}`, lookup)).toBe(`${ref("1bad")} `);
   });
 
+  it("truncates to the last characters while the output file stays raw", async () => {
+    const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "sr-trunc-")), "logs");
+    try {
+      const { tools, cfg: c } = toolsFor(
+        [
+          "g:",
+          "  commands:",
+          "    - label: T",
+          "      command: echo aaaaaa bbbbbb",
+          "      output:",
+          `        to: {dir: ${dir}}`,
+          "        truncate: 7",
+        ].join("\n"),
+      );
+      const r = await runEntry(tools[0].entry, {}, c.defaults);
+      expect(r.text).toContain("bbb");
+      expect(r.text).toContain("truncated");
+      expect(r.text).not.toContain("aaaaaa");
+      const [name] = fs.readdirSync(dir);
+      const raw = fs.readFileSync(path.join(dir, name), "utf8");
+      expect(raw).toContain("aaaaaa");
+    } finally {
+      fs.rmSync(path.dirname(dir), { recursive: true, force: true });
+    }
+  });
+
+  it("shapes the result by bytes without breaking multibyte characters", async () => {
+    const { tools, cfg: c } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: U",
+        "      command: echo café café café",
+        "      output:",
+        "        truncate: {mode: start, bytes: 7}",
+      ].join("\n"),
+    );
+    const r = await runEntry(tools[0].entry, {}, c.defaults);
+    expect(r.text).toContain("café c");
+    expect(r.text).not.toContain("café café");
+    expect(r.text).not.toContain("�");
+    expect(r.text).toContain("bytes discarded");
+  });
+
+  it("shows the effective truncate shape in the doctor report", () => {
+    const report = doctorReport(
+      cfg({
+        groups: {
+          g: {
+            commands: [{ label: "A", command: "echo", output: { truncate: { bytes: 99 } } }],
+          },
+        },
+      }),
+    );
+    expect(report).toContain("truncate: last 99 bytes");
+  });
+
   it("resolves env_inherit through command, group and defaults precedence", async () => {
     const config = (groupKey: string, cmdKey: string, defaults: string) =>
       toolsFor(

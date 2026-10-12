@@ -36,7 +36,7 @@ export function prepareRun(
   if (typeof command !== "string") {
     return { error: { isError: true, text: command.error } };
   }
-  const { timeoutSec, maxChars, envInherit, outputTo } = effectiveLimits(
+  const { timeoutSec, maxChars, envInherit, truncate, outputTo } = effectiveLimits(
     cmd as CommandSpec,
     group as GroupSpec,
     defaults,
@@ -61,6 +61,7 @@ export function prepareRun(
       env: runEnv(group as GroupSpec, cmd as CommandSpec, envInherit),
       timeoutMs: timeoutSec * 1000,
       maxChars,
+      truncate,
       signal,
       onChunk: tee ? (c, isErr) => tee.push(c, isErr) : undefined,
     },
