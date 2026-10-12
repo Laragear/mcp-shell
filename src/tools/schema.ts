@@ -66,7 +66,7 @@ export function toolInputSchema(args: ArgsMode, outputToAllowed: boolean): Recor
             args: {
               type: "array",
               items: { type: "string" },
-              description: "Arguments appended to the configured command",
+              description: "Arguments appended to the configured command, each shell-quoted",
             },
           },
           additionalProperties: false,

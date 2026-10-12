@@ -151,7 +151,7 @@
             },
             "args": {
               "default": false,
-              "description": "Argument policy. Absent or false (the default): runs as-is, no arguments. true: free-form string list, shell-quoted, appended. List: named arguments, which fill {name} placeholders in cmd or are appended in declared order.",
+              "description": "Argument policy. Absent or false (the default): runs as-is, no arguments. true: the tool receives free-form arguments as a JSON array of strings, each shell-quoted separately and appended. List: named arguments, which fill {name} placeholders in cmd or are appended in declared order.",
               "oneOf": [
                 {
                   "type": "boolean"

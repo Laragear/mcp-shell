@@ -137,6 +137,29 @@ describe("tools corners", () => {
     expect(multi.schema.description).toContain("placeholders in the command line");
   });
 
+  it("quotes every free argument separately, spaces included", async () => {
+    const { tools, cfg: c } = toolsFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: F",
+        "      command: printf '[%s]'",
+        "      args: true",
+      ].join("\n"),
+    );
+    const r = await runEntry(tools[0].entry, ["a b", "it's"], c.defaults);
+    expect(r.text).toContain("[a b][it's]");
+  });
+
+  it("appends nothing in free mode when the arguments are not a list", () => {
+    const entry = {
+      cmd: { command: "echo", label: "X" },
+      args: { mode: "free" as const, specs: [] },
+    } as any;
+    expect(buildCommandline(entry, "a scalar, not a list")).toBe("echo");
+    expect(buildCommandline(entry, undefined)).toBe("echo");
+  });
+
   it("runs with group and command environment variables", async () => {
     const dir = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "sr-env-")), "logs");
     const { tools, cfg: c } = toolsFor(

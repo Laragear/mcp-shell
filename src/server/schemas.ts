@@ -64,7 +64,9 @@ export const removeCommandInput = z.object({
 export function zodInput(entry: ToolEntry, outputToAllowed: boolean): z.ZodObject {
   const shape: Record<string, z.ZodType> = {};
   if (entry.args.mode === "free") {
-    shape.args = z.array(z.string()).describe("Arguments appended to the configured command");
+    shape.args = z
+      .array(z.string())
+      .describe("Arguments appended to the configured command, each shell-quoted");
   } else if (entry.args.mode === "named") {
     for (const spec of entry.args.specs) {
       const field = z.string().describe(spec.description);

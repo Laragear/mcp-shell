@@ -153,7 +153,7 @@ Agents get the same schema through the `config_schema` tool, which returns it ve
 
 By default, `args` is `false`, which means the command runs **exactly as written** and accepts no arguments. The agent can press the button, but not move the furniture.
 
-You may open it in two ways. Use `args: true` to let the agent append free-form arguments, which are shell-quoted before joining the command line. Use a list of named arguments to control what the agent can pass, each with its own `description` and optional `default`.
+You may open it in two ways. Use `args: true` to let the agent append free-form arguments. The tool receives them as a **JSON array of strings**, and each element is shell-quoted on its own before joining the command line, so callers never escape quotes themselves and an argument with spaces stays one argument. Use a list of named arguments to control what the agent can pass, each with its own `description` and optional `default`.
 
 Named arguments fill `{placeholders}` in the command line when you declare them, which allows arguments in the middle of the command. Arguments without a placeholder are appended in declared order, as before.
 
@@ -279,7 +279,7 @@ You may cancel a running tool call, and so may the agent or the client. The serv
 |---------------------------------------|---------------------------------------------------------------------------------------------------------|
 | `label` (required)                    | Short human-readable label, slugged into the tool name.                                                 |
 | `command` (required)                  | The command line, run through the shell. Pipes and redirects work.                                      |
-| `args`                                | `false` by default. `true` allows free-form arguments. A list declares named arguments.                 |
+| `args`                                | `false` by default. `true` takes free-form arguments as an array of strings. A list declares named arguments. |
 | `description`                         | Refines the tool description shown to the agent.                                                        |
 | `env`, `timeout`, `cwd`, `max_output` | Per-command overrides.                                                                                  |
 | `env_inherit`                         | `true` by default. `false` cuts the inherited environment down to the declared `env`.                   |

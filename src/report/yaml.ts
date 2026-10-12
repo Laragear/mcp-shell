@@ -12,6 +12,7 @@ export const COMMAND_REFERENCE = [
   `      # Full reference of optional command keys:`,
   `      # description: refines the tool description`,
   `      # args: false | true | list of {name, description, required, default, prefix, suffix}`,
+  `      # args: true receives a list of strings, each shell-quoted separately before appending`,
   `      # command may contain {placeholders} filled by named args: eslint {file}`,
   `      # prefix/suffix glue literal text around an argument value: prefix: "--memory "`,
   `      # env: { KEY: value } — inline mapping, or nested keys; values may use \${VAR}`,
@@ -60,7 +61,9 @@ export function emitEnv(
 function emitArgs(out: string[], cmd: any): void {
   const args = argMode(cmd);
   if (args.mode === "free") {
-    out.push(`      args: true   # accepts free-form arguments, shell-quoted, appended`);
+    out.push(
+      `      args: true   # accepts free-form arguments as a list of strings, quoted separately`,
+    );
   } else if (args.mode === "named") {
     out.push(`      args:`);
     for (const s of args.specs) {
