@@ -1,6 +1,6 @@
 {
   "name": "@laragear/mcp-shell",
-  "version": "0.0.0",
+  "version": "1.1.0",
   "description": "MCP server that exposes only the shell commands you declare in a YAML or JSON config file.",
   "license": "MIT",
   "repository": {

@@ -32,7 +32,7 @@ import { requestSignal, signalMiddleware } from "./middleware.js";
 import type { z } from "zod";
 import { argValuesFor, removeCommandInput, saveCommandInput, zodInput } from "./schemas.js";
 
-export const SERVER_VERSION = "1.0";
+export const SERVER_VERSION = "1.1";
 
 /** The approval form shown to the human: one explicit boolean, so a accept
  * is always a deliberate answer and never a default. */

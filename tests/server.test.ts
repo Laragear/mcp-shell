@@ -32,7 +32,7 @@ describe("ShellRunnerServer over fastmcp", () => {
   it("initializes with the shell-runner server info and listChanged capability", async () => {
     const s = await makeSession("g:\n  commands:\n    - label: Ok\n      command: echo hi\n");
     try {
-      expect(s.client.getServerInfo()).toMatchObject({ name: "shell-runner", version: "1.0" });
+      expect(s.client.getServerInfo()).toMatchObject({ name: "shell-runner", version: "1.1" });
       expect(s.client.getServerCapabilities()?.tools).toMatchObject({ listChanged: true });
     } finally {
       s.restore();
