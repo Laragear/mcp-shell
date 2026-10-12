@@ -194,3 +194,21 @@ describe("discovery and merge", () => {
     }
   });
 });
+
+describe("defaults umbrella without a to", () => {
+  it("keeps the truncate-only umbrella intact", () => {
+    const prev = process.env.SHELL_RUNNER_CONFIG;
+    process.env.SHELL_RUNNER_CONFIG = writeConfig(
+      tmp,
+      "defaults:\n  output:\n    truncate: 5\ng:\n  commands:\n    - label: A\n      command: echo\n",
+    );
+    try {
+      const cfg = loadConfig();
+      expect(cfg.issues).toEqual([]);
+      expect(cfg.defaults.output).toEqual({ truncate: 5 });
+    } finally {
+      if (prev === undefined) delete process.env.SHELL_RUNNER_CONFIG;
+      else process.env.SHELL_RUNNER_CONFIG = prev;
+    }
+  });
+});

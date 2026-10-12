@@ -51,13 +51,13 @@ export function makeCollector(spec: NormalizedTruncate) {
   };
 
   // Drops an incomplete trailing sequence when a head cut fell inside one.
+  // The buffer is always a prefix of the stream, so it starts at a lead byte.
   const stripTrailingFragment = (b: Buffer): Buffer => {
     let continuations = 0;
     while (continuations < b.length && (b[b.length - 1 - continuations] & 0xc0) === 0x80) {
       continuations++;
     }
     const lead = b.length - 1 - continuations;
-    if (lead < 0) return Buffer.alloc(0);
     const first = b[lead];
     const expected = first >= 0xf0 ? 4 : first >= 0xe0 ? 3 : first >= 0xc0 ? 2 : 1;
     return b.length - lead < expected ? b.subarray(0, lead) : b;

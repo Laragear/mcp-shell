@@ -175,16 +175,21 @@ describe("agent config file", () => {
         pipe: "cat",
         check: { contains: "hi" },
         max_output: 10,
-        destructive: true,
+        env_inherit: false,
+        nature: "destructive",
       },
     );
     const back = readAgentGroups(file).empty.commands[0];
     expect(back).toMatchObject({
       label: "Full",
-      destructive: true,
+      env_inherit: false,
+      nature: "destructive",
       check: { contains: "hi" },
       timeout: 5,
     });
+    const written = fs.readFileSync(file, "utf8");
+    expect(written).toContain("env_inherit: false");
+    expect(written).toContain("nature: destructive");
   });
 
   it("upserts: creates a group, appends and replaces by label", () => {
@@ -203,6 +208,8 @@ describe("agent config file", () => {
     const groups = readAgentGroups(file);
     expect(groups.g.commands.map((c: any) => c.command)).toEqual(["echo a2", "echo b"]);
     expect(groups.g.description).toBe("D");
+    upsertAgentCommand(file, "g2", {}, { label: "D", command: "echo d", destructive: true });
+    expect(fs.readFileSync(file, "utf8")).toContain("destructive: true");
   });
 
   it("refuses an invalid proposal and writes nothing", () => {

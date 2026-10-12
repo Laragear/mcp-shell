@@ -491,6 +491,17 @@ describe("command behavior through the runner", () => {
     expect(r.isError).toBe(false);
   });
 
+  it("tolerates an unset HOME with inheritance off", async () => {
+    await withEnv({ HOME: undefined }, async () => {
+      const { tools, cfg: c } = toolsFor(
+        "g:\n  commands:\n    - label: N\n      command: echo ok\n      env_inherit: false\n",
+      );
+      const r = await runEntry(tools[0].entry, {}, c.defaults);
+      expect(r.isError).toBe(false);
+      expect(r.text).toContain("ok");
+    });
+  });
+
   it("expands env var references in declared env values from the parent environment", async () => {
     const ref = (n: string) => `$\{${n}}`;
     const text = await withEnv({ SR_TOKEN: "s3cret" }, async () => {

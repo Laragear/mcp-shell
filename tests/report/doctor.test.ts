@@ -192,4 +192,16 @@ it("shows the effective truncate shape in the doctor report", () => {
     }),
   );
   expect(report).toContain("truncate: last 99 bytes");
+  const chars = doctorReport(
+    cfg({
+      groups: {
+        g: {
+          commands: [
+            { label: "A", command: "echo", output: { truncate: { mode: "start", length: 50 } } },
+          ],
+        },
+      },
+    }),
+  );
+  expect(chars).toContain("truncate: first 50 chars");
 });

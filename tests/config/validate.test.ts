@@ -263,6 +263,25 @@ describe("nature validation", () => {
     ).toHaveLength(1);
   });
 
+  it("rejects nature plus both legacy flags at once", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      nature: normal",
+        "      read_only: true",
+        "      destructive: true",
+      ].join("\n"),
+    );
+    expect(
+      issues.some((i) =>
+        i.includes('"nature" replaces the legacy "read_only" and "destructive" flags'),
+      ),
+    ).toBe(true);
+  });
+
   it("applies the read_only restrictions through the nature key", () => {
     const issues = issuesFor(
       [

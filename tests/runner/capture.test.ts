@@ -30,6 +30,31 @@ describe("makeCollector", () => {
     expect(c.text()).toBe("áá\n…[truncated, 2 more bytes discarded]");
   });
 
+  it("drops a lone continuation byte left by a tail cut", () => {
+    const c = makeCollector({ kind: "bytes", mode: "end", limit: 3 });
+    c.push(Buffer.from("ááá", "utf8"));
+    expect(c.text()).toBe("á\n…[truncated, 4 more bytes discarded]");
+  });
+
+  it("cuts an incomplete trailing byte sequence", () => {
+    const c = makeCollector({ kind: "bytes", mode: "start", limit: 2 });
+    c.push(Buffer.from([0x61])); // "a"
+    c.push(Buffer.from([0xc3, 0xa1])); // "á": the cut lands between lead and continuation
+    expect(c.text()).toBe("a\n…[truncated, 2 more bytes discarded]");
+  });
+
+  it("cuts a 3-byte sequence without leaving fragments", () => {
+    const c = makeCollector({ kind: "bytes", mode: "start", limit: 2 });
+    c.push(Buffer.from("a…", "utf8"));
+    expect(c.text()).toBe("a\n…[truncated, 3 more bytes discarded]");
+  });
+
+  it("cuts a 4-byte sequence without leaving fragments", () => {
+    const c = makeCollector({ kind: "bytes", mode: "start", limit: 3 });
+    c.push(Buffer.from("a😀", "utf8"));
+    expect(c.text()).toBe("a\n…[truncated, 4 more bytes discarded]");
+  });
+
   it("keeps everything when the limit is larger than the output", () => {
     const c = makeCollector({ kind: "chars", mode: "end", limit: 100 });
     c.push(Buffer.from("small"));
