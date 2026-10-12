@@ -330,11 +330,21 @@
             "read_only": {
               "type": "boolean",
               "default": false,
-              "description": "Constraint: the command does not modify its environment. A read_only command may not declare env, pipe or output_to, and cannot be destructive. Surfaced as MCP readOnlyHint."
+              "description": "Legacy alias of nature: read_only. The command does not modify its environment; it may not declare env, pipe or output_to, and cannot be destructive. Surfaced as MCP readOnlyHint."
             },
             "destructive": {
               "type": "boolean",
-              "description": "Constraint: the command may delete or overwrite. Every call is refused unless the agent passes acknowledge_destructive: true. Defaults to the inverse of read_only for the MCP destructiveHint."
+              "description": "Legacy alias of nature: destructive. The command may delete or overwrite; every call is refused unless the agent passes acknowledge_destructive: true. Defaults to the inverse of read_only for the MCP destructiveHint."
+            },
+            "nature": {
+              "type": "string",
+              "enum": [
+                "read_only",
+                "normal",
+                "destructive"
+              ],
+              "default": "normal",
+              "description": "Semaphore of the command's nature. read_only forbids env, pipe and output_to; destructive requires acknowledge_destructive: true on every call; normal (the default) has no restrictions. Replaces the legacy read_only/destructive flags; declare one form, not both."
             },
             "max_output": {
               "type": "integer",

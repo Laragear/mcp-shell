@@ -4,7 +4,7 @@
 
 import { commandPlaceholders, compileMultilineRegex } from "../support.js";
 import { normalizeOutputTo } from "./output.js";
-import { CHECK_RULES } from "./types.js";
+import { CHECK_RULES, NATURES, resolveNature } from "./types.js";
 
 /** Validates the check rules of a command: every present rule must be known,
  * and regex patterns must compile. False when the check is unusable. */
@@ -189,10 +189,23 @@ function validateTruncate(where: string, t: unknown, issues: string[]): void {
   }
 }
 
-/** Validates the read_only/destructive pair: real booleans, never both true,
- * and a read_only command may not carry side-effecting keys. Both true makes
- * the command unusable (the caller then excludes it). */
+/** Validates the command-nature semaphore and its legacy read_only/destructive
+ * aliases: the nature value must be known, the two forms may not mix on one
+ * level, the legacy pair is never both true, and a read_only command may not
+ * carry side-effecting keys. */
 function validateFlags(where: string, cmd: any, issues: string[]): boolean {
+  if (cmd.nature !== undefined) {
+    if (typeof cmd.nature !== "string" || !(NATURES as readonly string[]).includes(cmd.nature)) {
+      issues.push(`${where}: "nature" must be one of ${NATURES.join(", ")}`);
+    }
+    const legacy = (["read_only", "destructive"] as const).filter((k) => cmd[k] !== undefined);
+    if (legacy.length) {
+      issues.push(
+        `${where}: "nature" replaces the legacy ${legacy.map((k) => `"${k}"`).join(" and ")}` +
+          ` flag${legacy.length > 1 ? "s" : ""}; declare one`,
+      );
+    }
+  }
   for (const key of ["read_only", "destructive"] as const) {
     if (cmd[key] !== undefined && typeof cmd[key] !== "boolean") {
       issues.push(`${where}: "${key}" must be true or false`);
@@ -200,13 +213,16 @@ function validateFlags(where: string, cmd: any, issues: string[]): boolean {
   }
   if (cmd.read_only === true && cmd.destructive === true) {
     issues.push(`${where}: "read_only" and "destructive" cannot both be true`);
-    return false;
   }
-  if (cmd.read_only !== true) return true;
-  if (cmd.env !== undefined) issues.push(`${where}: a "read_only" command cannot declare "env"`);
-  if (cmd.pipe !== undefined) issues.push(`${where}: a "read_only" command cannot declare "pipe"`);
+  if (resolveNature(cmd) !== "read_only") return true;
+  if (cmd.env !== undefined) {
+    issues.push(`${where}: a read_only command cannot declare "env"`);
+  }
+  if (cmd.pipe !== undefined) {
+    issues.push(`${where}: a read_only command cannot declare "pipe"`);
+  }
   if (cmd.output_to !== undefined && cmd.output_to !== false && cmd.output_to !== null) {
-    issues.push(`${where}: a "read_only" command cannot declare "output_to"`);
+    issues.push(`${where}: a read_only command cannot declare "output_to"`);
   }
   return true;
 }

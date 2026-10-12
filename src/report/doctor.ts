@@ -2,7 +2,12 @@
 // is wrong — so one call answers "what happens if I run this?".
 
 import type { CommandSpec, GroupSpec, LoadedConfig } from "../config/index.js";
-import { effectiveLimits, readAgentGroups, resolveOutputTo } from "../config/index.js";
+import {
+  effectiveLimits,
+  readAgentGroups,
+  resolveNature,
+  resolveOutputTo,
+} from "../config/index.js";
 import { flattenTools, previewCommandline } from "../tools/index.js";
 
 /**
@@ -109,6 +114,8 @@ function reportGroup(
     const cmd = t.entry.cmd;
     const extras = commandExtras(cmd, group, cfg);
     if (t.entry.args.mode !== "none") extras.unshift("accepts arguments");
+    const nature = resolveNature(cmd);
+    if (nature !== "normal") extras.push(`nature: ${nature}`);
     const limits = effectiveLimits(cmd, group, cfg.defaults);
     if (limits.timeoutSec !== timeoutSec) extras.push(`timeout=${limits.timeoutSec}s`);
     if (limits.truncate.kind !== "default") {

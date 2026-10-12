@@ -229,6 +229,30 @@ describe("flattenTools edge cases", () => {
     expect(tool.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
     expect(tool.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
   });
+
+  it("maps the nature semaphore onto hints, description and consent", () => {
+    const readOnly = oneTool(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      nature: read_only\n",
+    );
+    expect(readOnly.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
+    expect(readOnly.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
+
+    const destructive = oneTool(
+      "g:\n  commands:\n    - label: B\n      command: echo\n      nature: destructive\n",
+    );
+    expect(destructive.schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
+      type: "boolean",
+    });
+    expect(destructive.schema.description).toContain("acknowledge_destructive");
+    expect(destructive.schema.annotations).toEqual({
+      readOnlyHint: false,
+      destructiveHint: true,
+    });
+
+    const normal = oneTool("g:\n  commands:\n    - label: C\n      command: echo\n");
+    expect(normal.schema.annotations).toEqual({ readOnlyHint: false, destructiveHint: true });
+    expect(normal.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
+  });
 });
 
 describe("argMode", () => {

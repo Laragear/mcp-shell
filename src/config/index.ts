@@ -11,9 +11,16 @@ export type {
   NormalizedOutputTo,
   NormalizedTruncate,
   OutputSpec,
+  CommandNature,
   TruncateSpec,
 } from "./types.js";
-export { AGENT_FILENAME_RE, CHECK_RULES, OUTPUT_TO_EXTENSIONS } from "./types.js";
+export {
+  AGENT_FILENAME_RE,
+  CHECK_RULES,
+  NATURES,
+  OUTPUT_TO_EXTENSIONS,
+  resolveNature,
+} from "./types.js";
 export { agentsDir, homeDir, loadConfig, parseConfigFile, projectDir } from "./load.js";
 export {
   AGENT_CONFIG_FILE,

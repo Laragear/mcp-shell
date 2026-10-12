@@ -144,6 +144,31 @@ describe("ShellRunnerServer over fastmcp", () => {
     }
   });
 
+  it("gates nature: destructive commands the same way", async () => {
+    const marker = path.join(tmp, "nature-destroyed.txt");
+    const s = await makeSession(
+      [
+        "g:",
+        "  commands:",
+        "    - label: Wipe",
+        `      command: touch ${marker}`,
+        "      nature: destructive",
+      ].join("\n"),
+    );
+    try {
+      const refused = await s.client.callToolRaw("g__wipe", {});
+      expect(refused.isError).toBe(true);
+      expect((refused.content as any)[0].text).toContain("acknowledge_destructive: true");
+      expect(fs.existsSync(marker)).toBe(false);
+
+      const ok = await s.client.callToolRaw("g__wipe", { acknowledge_destructive: true });
+      expect(ok.isError).toBeFalsy();
+      expect(fs.existsSync(marker)).toBe(true);
+    } finally {
+      s.restore();
+    }
+  });
+
   it("refuses a save_command proposal that is both read_only and destructive", async () => {
     const s = await makeSession("g:\n  commands:\n    - label: Ok\n      command: echo hi\n");
     try {

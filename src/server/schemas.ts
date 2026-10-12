@@ -2,7 +2,7 @@
 // and the marshalling of validated arguments for the command-line builder.
 
 import { z } from "zod";
-import { AGENT_FILENAME_RE } from "../config/index.js";
+import { AGENT_FILENAME_RE, resolveNature } from "../config/index.js";
 import {
   ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION,
   OUTPUT_TO_ARG_DESCRIPTION,
@@ -49,6 +49,7 @@ export const saveCommandInput = z.object({
     })
     .optional(),
   max_output: z.number().optional(),
+  nature: z.enum(["read_only", "normal", "destructive"]).optional(),
   read_only: z.boolean().optional(),
   destructive: z.boolean().optional(),
   output_to: z.union([z.string(), z.record(z.string(), z.unknown())]).optional(),
@@ -80,7 +81,7 @@ export function zodInput(entry: ToolEntry, outputToAllowed: boolean): z.ZodObjec
   if (outputToAllowed) {
     shape.output_to = OUTPUT_TO_ARG.optional();
   }
-  if (entry.cmd?.destructive === true) {
+  if (resolveNature(entry.cmd) === "destructive") {
     shape.acknowledge_destructive = z
       .boolean()
       .optional()

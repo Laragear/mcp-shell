@@ -20,6 +20,7 @@ import {
   loadConfig,
   readAgentGroups,
   removeAgentCommand,
+  resolveNature,
   resolveOutputTo,
   upsertAgentCommand,
   validateAgentProposal,
@@ -358,7 +359,10 @@ export class ShellRunnerServer {
           annotations: tool.schema.annotations,
         },
         async (parsed: Record<string, unknown>) => {
-          if (entry.cmd.destructive === true && parsed.acknowledge_destructive !== true) {
+          if (
+            resolveNature(entry.cmd) === "destructive" &&
+            parsed.acknowledge_destructive !== true
+          ) {
             return ShellRunnerServer.refuse(
               "This command is declared destructive. Call it again with acknowledge_destructive: true.",
             );

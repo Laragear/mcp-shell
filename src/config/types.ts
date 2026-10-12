@@ -57,6 +57,7 @@ export interface CommandSpec {
   max_output?: number;
   read_only?: boolean;
   destructive?: boolean;
+  nature?: string;
   output_to?: unknown;
   output?: OutputSpec;
 }
@@ -107,6 +108,25 @@ export interface Limits {
 
 export const CHECK_RULES = ["contains", "not_contains", "regex", "not_regex"];
 export const RESERVED_KEYS = ["defaults", "version"];
+
+/** The command-nature semaphore, replacing the legacy read_only/destructive
+ * flags: read_only forbids side-effecting keys, destructive requires
+ * per-call consent, normal (the default) has no restrictions. */
+export const NATURES = ["read_only", "normal", "destructive"] as const;
+export type CommandNature = (typeof NATURES)[number];
+
+/** The effective nature of a command: the nature key when valid, else the
+ * legacy flags (both legacy flags set falls back to the restrictive side),
+ * else normal. */
+export function resolveNature(cmd: Record<string, any> | null | undefined): CommandNature {
+  const nature = cmd?.nature;
+  if (typeof nature === "string" && (NATURES as readonly string[]).includes(nature)) {
+    return nature as CommandNature;
+  }
+  if (cmd?.destructive === true) return "destructive";
+  if (cmd?.read_only === true) return "read_only";
+  return "normal";
+}
 
 // Agent-supplied filenames: letters and digits with a single optional dot.
 export const AGENT_FILENAME_RE = /^[A-Za-z0-9]+(\.[A-Za-z0-9]+)?$/;

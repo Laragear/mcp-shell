@@ -313,23 +313,29 @@ You may cancel a running tool call, and so may the agent or the client. The serv
 
 ### Guarding dangerous commands
 
-The `read_only` and `destructive` flags are constraints, not hints.
+The `nature` key is a semaphore that says what a command is. It takes one of three values, and `normal` is the default.
 
-A `read_only: true` command may not declare `env`, `pipe` or `output_to`, because those change things outside the command itself. The config reports a problem and `list_commands` shows it until you fix it. The flags also exclude each other: a command is one or the other, never both.
+`nature: read_only` marks a command that does not modify its environment. It may not declare `env`, `pipe` or `output_to`, because those change things outside the command itself. The config reports a problem and `list_commands` shows it until you fix it.
 
 ```yaml
 - label: Show the changelog
   command: cat CHANGELOG.md
-  read_only: true
+  nature: read_only
 ```
 
-A `destructive: true` command needs consent on every call. The tool gains an `acknowledge_destructive` argument, and any call without `acknowledge_destructive: true` is refused before anything runs. The refusal tells the agent exactly that, so it can decide to retry deliberately. The client still sees the command flagged through the MCP annotations either way.
+`nature: destructive` marks a command that may delete or overwrite. It needs consent on every call: the tool gains an `acknowledge_destructive` argument, and any call without `acknowledge_destructive: true` is refused before anything runs. The refusal tells the agent exactly that, so it can decide to retry deliberately.
 
 ```yaml
 - label: Drop the database
   command: bin/rails db:drop
-  destructive: true
+  nature: destructive
 ```
+
+`nature: normal`, the default, carries no restriction. The client still sees every command flagged through the MCP annotations either way.
+
+> [!NOTE]
+>
+> The `read_only` and `destructive` booleans still work as legacy aliases of `nature: read_only` and `nature: destructive`. Declare one form per command, not both, and prefer `nature`: it is the single point the server validates and reports.
 
 ### Command keys
 
@@ -344,7 +350,7 @@ A `destructive: true` command needs consent on every call. The tool gains an `ac
 | `pipe`                                | Second command piped after stdout, the tool result is its output and the exit code stays the command's. |
 | `check`                               | Success rules on the output: `contains`, `not_contains`, `regex` and `not_regex`.                       |
 | `output_to`                           | Opt-in raw output to a file. Disabled by default, because output can carry secrets.                     |
-| `read_only`, `destructive`            | Constraints. `read_only` forbids side-effecting keys, `destructive` requires per-call consent.          |
+| `nature`                              | Semaphore: `read_only`, `normal` (default) or `destructive`. Replaces the legacy `read_only`/`destructive` flags. |
 
 Group keys work the same way, one level up: `description`, `trigger`, `env`, `env_inherit`, `timeout`, `cwd` and `commands`, which is required.
 

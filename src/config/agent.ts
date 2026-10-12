@@ -93,6 +93,7 @@ function emitAgentCommand(cmd: any): string[] {
     }
   }
   if (cmd.max_output !== undefined) out.push(`      max_output: ${scalar(cmd.max_output)}`);
+  if (cmd.nature !== undefined) out.push(`      nature: ${yamlScalar(cmd.nature)}`);
   if (cmd.read_only === true) out.push("      read_only: true");
   if (cmd.destructive === true) out.push("      destructive: true");
   if (cmd.output_to !== undefined) {

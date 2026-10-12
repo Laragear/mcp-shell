@@ -4,7 +4,7 @@
 // rename to avoid collisions.
 
 import type { GroupSpec, NormalizedOutputTo } from "../config/index.js";
-import { resolveOutputTo } from "../config/index.js";
+import { resolveNature, resolveOutputTo } from "../config/index.js";
 import { slug } from "../support.js";
 import { argMode } from "./commandline.js";
 import { toolDescription, toolInputSchema } from "./schema.js";
@@ -86,15 +86,21 @@ const SAVE_COMMAND_PROPERTIES: Record<string, any> = {
     description: "Success rules on the output",
   },
   max_output: { type: "number", description: "Output truncation limit in chars" },
+  nature: {
+    type: "string",
+    enum: ["read_only", "normal", "destructive"],
+    description:
+      "Semaphore of the command's nature. read_only forbids env, pipe and output_to; destructive requires acknowledge_destructive: true per call; normal (default) has no restrictions. Replaces the legacy read_only/destructive flags.",
+  },
   read_only: {
     type: "boolean",
     description:
-      "Constraint: the command does not modify its environment. It may not declare env, pipe or output_to.",
+      "Legacy alias of nature: read_only. The command does not modify its environment; it may not declare env, pipe or output_to.",
   },
   destructive: {
     type: "boolean",
     description:
-      "Constraint: the command may delete or overwrite. Every call must pass acknowledge_destructive: true.",
+      "Legacy alias of nature: destructive. The command may delete or overwrite; every call must pass acknowledge_destructive: true.",
   },
   output_to: {
     oneOf: [{ type: "string" }, { type: "object" }],
@@ -204,16 +210,15 @@ function commandTool(
   const name = uniqueToolName(groupKey, cmd.label, used);
   const args = argMode(cmd);
   const outputTo = resolveOutputTo(cmd, group, defaults) as NormalizedOutputTo | null;
-  const readOnly = cmd.read_only === true;
-  const destructive = cmd.destructive === true;
+  const nature = resolveNature(cmd);
   const schema: ToolSchema = {
     name,
     title: cmd.label,
     description: toolDescription(groupKey, group, cmd, args, outputTo),
-    inputSchema: toolInputSchema(args, outputTo?.allow_agent === true, destructive),
+    inputSchema: toolInputSchema(args, outputTo?.allow_agent === true, nature === "destructive"),
     annotations: {
-      readOnlyHint: readOnly,
-      destructiveHint: cmd.destructive === true ? true : !readOnly,
+      readOnlyHint: nature === "read_only",
+      destructiveHint: nature !== "read_only",
     },
   };
   return { entry: { groupKey, group, cmd, toolName: name, args }, schema };

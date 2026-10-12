@@ -224,6 +224,76 @@ describe("read_only and destructive validation", () => {
   });
 });
 
+describe("nature validation", () => {
+  it("rejects an unknown nature value", () => {
+    const issues = issuesFor(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      nature: risky\n",
+    );
+    expect(
+      issues.some((i) => i.includes('"nature" must be one of read_only, normal, destructive')),
+    ).toBe(true);
+  });
+
+  it("rejects mixing nature with the legacy flags", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      nature: read_only",
+        "      read_only: true",
+        "    - label: B",
+        "      command: echo",
+        "      nature: normal",
+        "      destructive: true",
+      ].join("\n"),
+    );
+    expect(
+      issues.filter((i) => i.includes('"nature" replaces the legacy "read_only" flag')),
+    ).toHaveLength(1);
+    expect(
+      issues.filter((i) => i.includes('"nature" replaces the legacy "destructive" flag')),
+    ).toHaveLength(1);
+  });
+
+  it("applies the read_only restrictions through the nature key", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: cat f.txt",
+        "      nature: read_only",
+        "      env: { A: 1 }",
+        "      pipe: wc -l",
+        "      output_to: out.txt",
+      ].join("\n"),
+    );
+    expect(issues.some((i) => i.includes("a read_only command cannot declare"))).toBe(true);
+    expect(issues.filter((i) => i.includes("a read_only command cannot declare"))).toHaveLength(3);
+  });
+
+  it("accepts every nature value on a plain command", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      nature: read_only",
+        "    - label: B",
+        "      command: echo",
+        "      nature: normal",
+        "    - label: C",
+        "      command: echo",
+        "      nature: destructive",
+      ].join("\n"),
+    );
+    expect(issues).toEqual([]);
+  });
+});
+
 describe("output umbrella validation", () => {
   it("rejects non-mapping and unknown keys", () => {
     const issues = issuesFor(

@@ -2,7 +2,7 @@
 // and JSON input schema, shared by the registry and the zod validators.
 
 import type { CommandSpec, GroupSpec, NormalizedOutputTo } from "../config/index.js";
-import { AGENT_FILENAME_RE } from "../config/index.js";
+import { AGENT_FILENAME_RE, resolveNature } from "../config/index.js";
 import { commandPlaceholders } from "../support.js";
 import type { ArgsMode } from "./types.js";
 
@@ -63,7 +63,7 @@ export function toolDescription(
       "You may pass output_to (true, or a filename like report.txt) to save this run's raw output under the configured directory.",
     );
   }
-  if (cmd.destructive === true) {
+  if (resolveNature(cmd) === "destructive") {
     parts.push("Destructive: the call is refused unless acknowledge_destructive is true.");
   }
   return parts.join(" — ");
