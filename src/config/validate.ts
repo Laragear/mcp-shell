@@ -114,6 +114,46 @@ function validateSharedFields(where: string, spec: any, issues: string[]): void 
   if (spec.env_inherit !== undefined && typeof spec.env_inherit !== "boolean") {
     issues.push(`${where}: "env_inherit" must be true or false`);
   }
+  validateOutputKey(where, spec, issues);
+}
+
+/** The allowed keys of the output umbrella, and the top-level key each one
+ * aliases. */
+export const OUTPUT_KEYS: Record<string, string> = { to: "output_to", pipe: "pipe" };
+
+/** Validates the output umbrella of a group or command: a mapping with known
+ * keys only, no alias declared twice on the same level, and a valid `to`. */
+function validateOutputKey(where: string, spec: any, issues: string[]): void {
+  const output = spec.output;
+  if (output === undefined) return;
+  if (!output || typeof output !== "object" || Array.isArray(output)) {
+    issues.push(`${where}: "output" must be a mapping of ${Object.keys(OUTPUT_KEYS).join(", ")}`);
+    return;
+  }
+  for (const key of Object.keys(output)) {
+    if (!OUTPUT_KEYS[key]) {
+      issues.push(
+        `${where}: "output" has an unknown key "${key}" (allowed: ${Object.keys(OUTPUT_KEYS).join(", ")})`,
+      );
+    }
+  }
+  const topAlias = (top: string) => `The key "${top}" is already declared here`;
+  if (output.pipe !== undefined) {
+    if (typeof output.pipe !== "string" || !output.pipe.trim()) {
+      issues.push(`${where}: "output" "pipe" must be a non-empty command string`);
+    }
+    if (spec.pipe !== undefined) {
+      issues.push(`${where}: ${topAlias("pipe")}; "output" "pipe" and "pipe" are the same thing`);
+    }
+  }
+  if (output.to !== undefined) {
+    normalizeOutputTo(`${where} "output" "to"`, output.to, issues);
+    if (spec.output_to !== undefined) {
+      issues.push(
+        `${where}: ${topAlias("output_to")}; "output" "to" and "output_to" are the same thing`,
+      );
+    }
+  }
 }
 
 /** Validates the read_only/destructive pair: real booleans, never both true,

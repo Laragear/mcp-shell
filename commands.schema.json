@@ -23,6 +23,10 @@
           "$ref": "#/definitions/outputTo",
           "description": "Opt-in raw output to a file. Disabled by default: file output can persist secrets a command prints. Nearest definition (command > group > defaults) wins wholesale."
         },
+        "output": {
+          "$ref": "#/definitions/outputControl",
+          "description": "Umbrella for output behavior. Each sub-key wins over its top-level alias (output.to over output_to, output.pipe over pipe) on the same level; across levels the nearest definition wins."
+        },
         "env_inherit": {
           "type": "boolean",
           "default": true,
@@ -37,6 +41,22 @@
     }
   },
   "definitions": {
+    "outputControl": {
+      "description": "Output behavior of a group or command. Each sub-key may also be written as its top-level alias; declaring both on the same level is an error.",
+      "type": "object",
+      "properties": {
+        "to": {
+          "$ref": "#/definitions/outputTo",
+          "description": "Where raw output is written. Alias of output_to."
+        },
+        "pipe": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Second command that the first command's stdout is piped into. Alias of pipe."
+        }
+      },
+      "additionalProperties": false
+    },
     "outputTo": {
       "description": "Opt-in raw output to a file. Disabled by default: file output can persist secrets a command prints. A string is a path written on every run; a mapping configures a directory the agent may write to when allow_agent is true. {command} and {group} placeholders expand.",
       "oneOf": [
@@ -120,6 +140,9 @@
       },
       "output_to": {
         "$ref": "#/definitions/outputTo"
+      },
+      "output": {
+        "$ref": "#/definitions/outputControl"
       },
       "env_inherit": {
         "type": "boolean",
@@ -285,6 +308,9 @@
             },
             "output_to": {
               "$ref": "#/definitions/outputTo"
+            },
+            "output": {
+              "$ref": "#/definitions/outputControl"
             }
           },
           "additionalProperties": false

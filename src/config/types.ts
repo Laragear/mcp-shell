@@ -16,6 +16,14 @@ export interface CheckSpec {
   [rule: string]: unknown;
 }
 
+/** The output umbrella: canonical home of file output (`to`, same shape as
+ * output_to) and the pipe stage. Coalesced into the top-level keys at load. */
+export interface OutputSpec {
+  [key: string]: unknown;
+  to?: unknown;
+  pipe?: unknown;
+}
+
 export interface CommandSpec {
   label: string;
   command: string;
@@ -31,6 +39,7 @@ export interface CommandSpec {
   read_only?: boolean;
   destructive?: boolean;
   output_to?: unknown;
+  output?: OutputSpec;
 }
 
 export interface GroupSpec {
@@ -41,6 +50,7 @@ export interface GroupSpec {
   timeout?: number;
   cwd?: string;
   output_to?: unknown;
+  output?: OutputSpec;
   commands: CommandSpec[];
 }
 

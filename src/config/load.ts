@@ -58,7 +58,26 @@ function groupsFromParsed(parsed: any): {
 }
 
 /**
- * Validates groups and defaults, wrapping everything into a LoadedConfig.
+ * Folds the output umbrella of one spec into its top-level aliases
+ * ("output.to" becomes "output_to", "output.pipe" becomes "pipe"), so
+ * everything downstream sees a single form. The umbrella itself is dropped.
+ * Validation has already reported same-level alias conflicts.
+ */
+function coalesceOutput(spec: any): any {
+  if (!spec || typeof spec !== "object" || Array.isArray(spec)) return spec;
+  const output = spec.output;
+  if (!output || typeof output !== "object" || Array.isArray(output)) return spec;
+  const { output: _dropped, ...rest } = spec;
+  return {
+    ...rest,
+    output_to: output.to !== undefined ? output.to : spec.output_to,
+    pipe: output.pipe !== undefined ? output.pipe : spec.pipe,
+  };
+}
+
+/**
+ * Validates groups and defaults, wraps everything into a LoadedConfig and
+ * coalesces every output umbrella into its top-level aliases.
  */
 function finishConfig(
   paths: string[],
@@ -73,13 +92,39 @@ function finishConfig(
   if (defaults && (defaults as any).output_to !== undefined) {
     normalizeOutputTo('config "defaults" "output_to"', (defaults as any).output_to, issues);
   }
+  if (defaults && (defaults as any).output && typeof (defaults as any).output === "object") {
+    const to = (defaults as any).output.to;
+    if (to !== undefined) {
+      normalizeOutputTo('config "defaults" "output" "to"', to, issues);
+    }
+  }
   const { issues: groupIssues, validGroups } = validateConfig(groups);
   issues.push(...groupIssues);
   if (validGroups === 0 && !issues.length) {
     issues.push("config declares no commands");
   }
+  const coalesced: Record<string, any> = {};
+  for (const [key, group] of Object.entries(groups)) {
+    if (!group || typeof group !== "object") {
+      coalesced[key] = group;
+      continue;
+    }
+    coalesced[key] = {
+      ...coalesceOutput(group),
+      commands: Array.isArray(group.commands)
+        ? group.commands.map((c: any) => coalesceOutput(c))
+        : group.commands,
+    };
+  }
   // finishConfig is only called with at least one path.
-  return { path: paths[0], paths, groups, defaults, issues, ...extra };
+  return {
+    path: paths[0],
+    paths,
+    groups: coalesced,
+    defaults: coalesceOutput(defaults),
+    issues,
+    ...extra,
+  };
 }
 
 /** The result when a config file exists but cannot be parsed: no commands

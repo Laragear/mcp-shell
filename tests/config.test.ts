@@ -3,7 +3,14 @@ import * as fs from "node:fs";
 import * as path from "node:path";
 import { effectiveLimits, loadConfig, projectSlug, storeConfigPath } from "../src/config/index.js";
 import { flattenTools } from "../src/tools/index.js";
-import { type DeclaredTool, loadConfigFor, makeTmp, withEnv, writeConfig } from "./helpers.js";
+import {
+  type DeclaredTool,
+  loadConfigFor,
+  makeTmp,
+  toolsFor,
+  withEnv,
+  writeConfig,
+} from "./helpers.js";
 
 const tmp = makeTmp("sr-config-");
 afterAll(() => fs.rmSync(tmp, { recursive: true, force: true }));
@@ -130,6 +137,70 @@ describe("output_to validation and precedence", () => {
     const def = effectiveLimits({}, {}, { output_to: "def.log" });
     expect(def.outputTo?.path).toBe("def.log");
     expect(effectiveLimits({}, {}, {}).outputTo).toBeNull();
+  });
+
+  it("resolves the output umbrella identically to the top-level aliases", () => {
+    // The load path coalesces output.* into the top-level keys.
+    const { tools, cfg } = toolsFor(
+      [
+        "defaults:",
+        "  output:",
+        "    to: def.log",
+        "g:",
+        "  output:",
+        "    to:",
+        "      dir: logs/",
+        "      allow_agent: true",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "    - label: B",
+        "      command: echo",
+        "      output:",
+        "        to: cmd.log",
+        "        pipe: tail -1",
+      ].join("\n"),
+    );
+    expect(cfg.issues).toEqual([]);
+    const group = cfg.groups.g;
+    const byLabel = (label: string) => tools.find((t) => t.entry.cmd.label === label);
+    const a = byLabel("A");
+    expect(a?.schema.description).toContain("output_to (true");
+    expect(effectiveLimits(a?.entry.cmd, group, cfg.defaults).outputTo?.dir).toBe("logs/");
+    const b = byLabel("B");
+    expect(b?.entry.cmd.pipe).toBe("tail -1");
+    expect(effectiveLimits(b?.entry.cmd, group, cfg.defaults).outputTo?.path).toBe("cmd.log");
+    // Defaults were coalesced too.
+    expect(cfg.defaults.output_to).toBe("def.log");
+    expect(cfg.defaults.output).toBeUndefined();
+  });
+
+  it("keeps the nearest definition when umbrella and alias forms mix across levels", () => {
+    const { tools, cfg } = toolsFor(
+      [
+        "g:",
+        "  output:",
+        "    pipe: tail -1",
+        "    to: group.log",
+        "  commands:",
+        "    - label: A",
+        "      command: echo hi",
+        "      output_to: false",
+        "    - label: B",
+        "      command: echo hi | wc -c",
+        "      pipe: cat",
+      ].join("\n"),
+    );
+    expect(cfg.issues).toEqual([]);
+    const group = cfg.groups.g;
+    const a = tools.find((t) => t.entry.cmd.label === "A");
+    // The group umbrella becomes the effective group pipe; the command
+    // output_to: false still wins wholesale over the group to.
+    expect((group as any).pipe).toBe("tail -1");
+    expect(a?.entry.cmd.pipe).toBeUndefined();
+    expect(effectiveLimits(a?.entry.cmd, group, cfg.defaults).outputTo).toBeNull();
+    const b = tools.find((t) => t.entry.cmd.label === "B");
+    expect(b?.entry.cmd.pipe).toBe("cat");
   });
 });
 

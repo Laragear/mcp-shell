@@ -24,6 +24,7 @@ export const COMMAND_REFERENCE = [
   `      # max_output: 5000   # output truncation limit in chars`,
   `      # output_to: logs/{command}.log — opt-in raw output to a file ({command}, {group} placeholders)`,
   `      #   or a mapping: {dir, allow_agent, append, stderr} — see config_template output`,
+  `      # output: {to: ..., pipe: ...} — same as output_to and pipe under one key`,
   `      # read_only: true — enforced: no env, pipe or output_to allowed on the command`,
   `      # destructive: true — enforced: calls need acknowledge_destructive: true`,
 ];

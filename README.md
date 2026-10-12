@@ -233,6 +233,22 @@ Pass a mapping for more control. A `dir` with `allow_agent: true` hands the deci
 
 Like `timeout` and `max_output`, the nearest definition wins: `defaults`, then group, then command, and `output_to: false` on a command disables an enabled group. Files are created with owner-only permissions, `{command}` and `{group}` placeholders expand in paths and directories, and a run that produced no output creates no file. The file receives the **raw** stdout of the command, so a `pipe` stage shapes only the result the agent reads. When a file is written, the result says where it landed with an `output file:` line.
 
+### One key for the output behavior
+
+You may gather the output behavior of a group or command under a single `output` key instead of spreading it over the command. `output.to` is `output_to`, and `output.pipe` is `pipe`:
+
+```yaml
+- label: Run build
+  command: npm run build
+  output:
+    to:
+      dir: logs/
+      allow_agent: true
+    pipe: tail -20
+```
+
+Both forms are accepted everywhere, and you may mix them across levels, like `output.pipe` on the command and `output_to` on the group. On the same level, declare each behavior once: writing `pipe` and `output.pipe` together is a config problem `list_commands` reports.
+
 > [!WARNING]
 >
 > Three channels leak secrets. The command line is visible in the process list while running, so pass secrets through `env` instead of arguments. Whatever the command prints reaches the conversation and the model provider. And a file written with `output_to` persists everything the command printed on disk. Keep `allow_agent` off for commands that handle credentials.

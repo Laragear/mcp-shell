@@ -224,6 +224,81 @@ describe("read_only and destructive validation", () => {
   });
 });
 
+describe("output umbrella validation", () => {
+  it("rejects non-mapping and unknown keys", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output: nope",
+        "    - label: B",
+        "      command: echo",
+        "      output: {to: a.log, mystery: 1}",
+      ].join("\n"),
+    );
+    expect(issues.some((i) => i.includes('"output" must be a mapping'))).toBe(true);
+    expect(issues.some((i) => i.includes('"output" has an unknown key "mystery"'))).toBe(true);
+  });
+
+  it("rejects alias keys declared twice on the same level", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output: {pipe: tail -1, to: a.log}",
+        "      pipe: head -1",
+        "      output_to: b.log",
+      ].join("\n"),
+    );
+    expect(issues.some((i) => i.includes('"output" "pipe" and "pipe" are the same thing'))).toBe(
+      true,
+    );
+    expect(issues.some((i) => i.includes('"output" "to" and "output_to" are the same thing'))).toBe(
+      true,
+    );
+  });
+
+  it("validates the pipe and to sub-keys", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output:",
+        "        pipe: '  '",
+        "        to: {path: x, dir: y}",
+      ].join("\n"),
+    );
+    expect(
+      issues.some((i) => i.includes('"output" "pipe" must be a non-empty command string')),
+    ).toBe(true);
+    expect(
+      issues.some((i) => i.includes('"output" "to": "output_to" accepts "path" or "dir"')),
+    ).toBe(true);
+  });
+
+  it("accepts the umbrella on groups and commands without conflicts", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  output:",
+        "    to: {dir: logs/, allow_agent: true}",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      output:",
+        "        pipe: tail -1",
+      ].join("\n"),
+    );
+    expect(issues).toEqual([]);
+  });
+});
+
 describe("output_to validation", () => {
   it("reports every invalid output_to form", () => {
     const issues = issuesFor(
