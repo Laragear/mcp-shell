@@ -12,6 +12,7 @@ import { requestSignal } from "../src/server/middleware.js";
 import { runEntry } from "../src/runner/index.js";
 import { spawnStage } from "../src/runner/process.js";
 import { killRunningChildren, trackRunningChild } from "../src/runner/kill.js";
+import { expandEnvVars } from "../src/support.js";
 import { parseYaml } from "../src/yaml/index.js";
 import { makeTmp, toolsFor, withEnv } from "./helpers.js";
 
@@ -185,6 +186,66 @@ describe("tools corners", () => {
     );
     const r = await runEntry(tools[0].entry, {}, c.defaults);
     expect(r.isError).toBe(false);
+  });
+
+  it("expands env var references in declared env values from the parent environment", async () => {
+    const ref = (n: string) => `$\{${n}}`;
+    const text = await withEnv({ SR_TOKEN: "s3cret" }, async () => {
+      const { tools, cfg: c } = toolsFor(
+        [
+          "g:",
+          "  commands:",
+          "    - label: X",
+          "      command: echo GOT=$GOT BARE=$SR_TOKEN",
+          "      env:",
+          `        GOT: "pre-${ref("SR_TOKEN")}-post ${ref("SR_DEFINITELY_NOT_SET")}"`,
+        ].join("\n"),
+      );
+      return (await runEntry(tools[0].entry, {}, c.defaults)).text;
+    });
+    expect(text).toContain("GOT=pre-s3cret-post");
+    // A bare $VAR (no braces) is left to the shell, which finds the parent var.
+    expect(text).toContain("BARE=s3cret");
+  });
+
+  it("expands an unset env var reference to nothing, also with inheritance off", async () => {
+    const unset = "$" + "{SR_DEFINITELY_NOT_SET}";
+    const { tools, cfg: c } = toolsFor(
+      [
+        "g:",
+        "  env:",
+        `    GONE: '[${unset}]'`,
+        "  commands:",
+        "    - label: X",
+        "      command: echo GONE=$GONE",
+        "      env_inherit: false",
+      ].join("\n"),
+    );
+    const r = await runEntry(tools[0].entry, {}, c.defaults);
+    expect(r.text).toContain("GONE=[]");
+  });
+
+  it("never shows declared env values in the doctor report", () => {
+    const report = doctorReport(
+      cfg({
+        groups: {
+          g: {
+            env: { SECRET: "plain" },
+            commands: [{ label: "A", command: "echo" }],
+          },
+        },
+      }),
+    );
+    expect(report).not.toContain("plain");
+  });
+
+  it("expands env var references against a lookup", () => {
+    const ref = (n: string) => `$\{${n}}`;
+    const lookup = (n: string) => ({ A: "1", B: "2" })[n];
+    expect(expandEnvVars(`${ref("A")}-${ref("B")}-${ref("A")}`, lookup)).toBe("1-2-1");
+    expect(expandEnvVars("no references", lookup)).toBe("no references");
+    expect(expandEnvVars(`$A ${ref("C")}`, lookup)).toBe("$A ");
+    expect(expandEnvVars(`${ref("1bad")} ${ref("_ok")}`, lookup)).toBe(`${ref("1bad")} `);
   });
 
   it("resolves env_inherit through command, group and defaults precedence", async () => {

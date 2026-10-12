@@ -304,7 +304,16 @@ Raise the timeout for slow commands, like a full build with coverage. Lower `max
 
 ### Environment variables
 
-Commands run with your environment plus whatever `env` you configure, where group `env` is overridden by command `env`.
+Commands run with your environment plus whatever `env` you configure, where group `env` is overridden by command `env`. Values may expand a variable from the environment with `${VAR}`, which is how you hand a secret from your own session to the command without writing it in the config file:
+
+```yaml
+- label: Deploy
+  command: ./deploy.sh
+  env:
+    API_TOKEN: ${MY_SESSION_TOKEN}
+```
+
+A variable that is not set expands to nothing. Expansion happens once, when the command runs, and never touches the command line itself, so `${VAR}` in `command` keeps its shell meaning.
 
 You may cut the inherited environment with `env_inherit: false`. The command then runs only with the declared `env`, which is useful for builds that must not see your local settings. `PATH` and `HOME` still come from the parent, so the shell and relative paths keep working. Like every override, `command > group > defaults` decides which value wins.
 

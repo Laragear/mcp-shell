@@ -5,6 +5,7 @@ import type { CommandSpec, GroupSpec } from "../config/index.js";
 import { effectiveLimits } from "../config/index.js";
 import { buildCommandline, type ToolEntry } from "../tools/index.js";
 import { agentOutputToError, teeFor, type OutputTee } from "./output-file.js";
+import { expandEnvVars } from "../support.js";
 import type { RunResult } from "./format.js";
 import type { StageOptions } from "./process.js";
 
@@ -83,11 +84,16 @@ function agentNotAllowed(
 
 /** The environment for the run: process env plus group then command env. With
  * inheritance off, only the declared env is passed, plus PATH and HOME from
- * the parent so /bin/sh and cwd resolution keep working. */
+ * the parent so /bin/sh and cwd resolution keep working. Declared values may
+ * expand ${VAR} from the parent environment. */
 function runEnv(group: GroupSpec, cmd: CommandSpec, inherit: boolean): NodeJS.ProcessEnv {
   const env: Record<string, string> = {};
-  for (const [k, v] of Object.entries(group.env || {})) env[k] = String(v);
-  for (const [k, v] of Object.entries(cmd.env || {})) env[k] = String(v);
+  for (const [k, v] of Object.entries(group.env || {})) {
+    env[k] = expandEnvVars(String(v), (n) => process.env[n]);
+  }
+  for (const [k, v] of Object.entries(cmd.env || {})) {
+    env[k] = expandEnvVars(String(v), (n) => process.env[n]);
+  }
   if (!inherit) {
     const minimal: Record<string, string> = {};
     for (const key of ["PATH", "HOME"]) {

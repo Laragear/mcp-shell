@@ -2,6 +2,8 @@
 
 const PLACEHOLDER_RE = /\{([A-Za-z0-9_-]+)\}/g;
 
+const ENV_VAR_RE = /\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g;
+
 /**
  * Lowercase a group or command name into a tool-name-safe slug.
  */
@@ -27,6 +29,15 @@ export function shellQuote(value: unknown): string {
  */
 export function commandPlaceholders(command: unknown): string[] {
   return [...String(command).matchAll(PLACEHOLDER_RE)].map((m) => m[1]);
+}
+
+/**
+ * Expand ${VAR} references in a configured env value against a lookup of the
+ * parent environment. An unset variable expands to nothing, like a shell
+ * would. Plain $VAR without braces is left alone.
+ */
+export function expandEnvVars(value: string, lookup: (name: string) => string | undefined): string {
+  return value.replace(ENV_VAR_RE, (_, name: string) => lookup(name) ?? "");
 }
 
 /** Compiles a check-rule pattern as a multiline regex, or reports why the
