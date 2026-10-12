@@ -3,7 +3,11 @@
 
 import { z } from "zod";
 import { AGENT_FILENAME_RE } from "../config/index.js";
-import { OUTPUT_TO_ARG_DESCRIPTION, type ToolEntry } from "../tools/index.js";
+import {
+  ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION,
+  OUTPUT_TO_ARG_DESCRIPTION,
+  type ToolEntry,
+} from "../tools/index.js";
 
 // Agent-decided file output. Present only when the command's config resolves
 // to an output_to with allow_agent.
@@ -76,6 +80,12 @@ export function zodInput(entry: ToolEntry, outputToAllowed: boolean): z.ZodObjec
   if (outputToAllowed) {
     shape.output_to = OUTPUT_TO_ARG.optional();
   }
+  if (entry.cmd?.destructive === true) {
+    shape.acknowledge_destructive = z
+      .boolean()
+      .optional()
+      .describe(ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION);
+  }
   return z.object(shape);
 }
 
@@ -84,7 +94,7 @@ export function zodInput(entry: ToolEntry, outputToAllowed: boolean): z.ZodObjec
 export function argValuesFor(entry: ToolEntry, parsed: Record<string, unknown>): unknown {
   if (entry.args.mode === "free") return parsed.args;
   if (entry.args.mode === "named") {
-    const { output_to, ...rest } = parsed;
+    const { output_to, acknowledge_destructive, ...rest } = parsed;
     return rest;
   }
   return {};

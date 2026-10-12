@@ -273,6 +273,26 @@ command: |
 
 You may cancel a running tool call, and so may the agent or the client. The server kills the whole process group, first with `SIGTERM` and then with `SIGKILL` after a short grace, so pipelines and child processes die with it. The cancelled call answers immediately with a cancellation error, and never waits for its timeout. When the session itself closes, any command still running is killed the same way.
 
+### Guarding dangerous commands
+
+The `read_only` and `destructive` flags are constraints, not hints.
+
+A `read_only: true` command may not declare `env`, `pipe` or `output_to`, because those change things outside the command itself. The config reports a problem and `list_commands` shows it until you fix it. The flags also exclude each other: a command is one or the other, never both.
+
+```yaml
+- label: Show the changelog
+  command: cat CHANGELOG.md
+  read_only: true
+```
+
+A `destructive: true` command needs consent on every call. The tool gains an `acknowledge_destructive` argument, and any call without `acknowledge_destructive: true` is refused before anything runs. The refusal tells the agent exactly that, so it can decide to retry deliberately. The client still sees the command flagged through the MCP annotations either way.
+
+```yaml
+- label: Drop the database
+  command: bin/rails db:drop
+  destructive: true
+```
+
 ### Command keys
 
 | Key                                   | Meaning.                                                                                                |
@@ -286,7 +306,7 @@ You may cancel a running tool call, and so may the agent or the client. The serv
 | `pipe`                                | Second command piped after stdout, the tool result is its output and the exit code stays the command's. |
 | `check`                               | Success rules on the output: `contains`, `not_contains`, `regex` and `not_regex`.                       |
 | `output_to`                           | Opt-in raw output to a file. Disabled by default, because output can carry secrets.                     |
-| `read_only`, `destructive`            | Hints for the client, surfaced as MCP annotations.                                                      |
+| `read_only`, `destructive`            | Constraints. `read_only` forbids side-effecting keys, `destructive` requires per-call consent.          |
 
 Group keys work the same way, one level up: `description`, `trigger`, `env`, `env_inherit`, `timeout`, `cwd` and `commands`, which is required.
 

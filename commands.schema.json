@@ -272,11 +272,11 @@
             "read_only": {
               "type": "boolean",
               "default": false,
-              "description": "MCP readOnlyHint: the command does not modify its environment."
+              "description": "Constraint: the command does not modify its environment. A read_only command may not declare env, pipe or output_to, and cannot be destructive. Surfaced as MCP readOnlyHint."
             },
             "destructive": {
               "type": "boolean",
-              "description": "MCP destructiveHint. Defaults to the inverse of read_only."
+              "description": "Constraint: the command may delete or overwrite. Every call is refused unless the agent passes acknowledge_destructive: true. Defaults to the inverse of read_only for the MCP destructiveHint."
             },
             "max_output": {
               "type": "integer",

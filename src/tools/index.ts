@@ -3,4 +3,10 @@
 
 export type { ArgsMode, ToolEntry, ToolList, ToolSchema } from "./types.js";
 export { argMode, buildCommandline, previewCommandline } from "./commandline.js";
-export { BUILTIN_TOOLS, flattenTools, OUTPUT_TO_ARG_DESCRIPTION } from "./registry.js";
+export { toolDescription, toolInputSchema } from "./schema.js";
+export {
+  ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION,
+  BUILTIN_TOOLS,
+  flattenTools,
+  OUTPUT_TO_ARG_DESCRIPTION,
+} from "./registry.js";

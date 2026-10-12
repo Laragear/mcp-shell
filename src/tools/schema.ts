@@ -19,6 +19,17 @@ const OUTPUT_TO_ARG_SCHEMA = {
   oneOf: [{ type: "boolean" }, { type: "string", pattern: AGENT_FILENAME_RE.source }],
 };
 
+/** Description of the destructive-command consent argument, shared by the
+ * JSON schema here and the zod schema in the server. */
+export const ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION =
+  "This command is declared destructive. Set true to confirm you intend to run it; " +
+  "the call is refused without it.";
+
+const ACKNOWLEDGE_ARG_SCHEMA = {
+  type: "boolean",
+  description: ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION,
+};
+
 /** The tool description: what it runs, how arguments are passed, and whether
  * the agent may opt into file output. */
 export function toolDescription(
@@ -52,12 +63,20 @@ export function toolDescription(
       "You may pass output_to (true, or a filename like report.txt) to save this run's raw output under the configured directory.",
     );
   }
+  if (cmd.destructive === true) {
+    parts.push("Destructive: the call is refused unless acknowledge_destructive is true.");
+  }
   return parts.join(" — ");
 }
 
 /** The JSON input schema for one args mode, plus the conditional output_to
- * argument when the agent may opt into file output. */
-export function toolInputSchema(args: ArgsMode, outputToAllowed: boolean): Record<string, any> {
+ * argument when the agent may opt into file output, and the consent argument
+ * for destructive commands. */
+export function toolInputSchema(
+  args: ArgsMode,
+  outputToAllowed: boolean,
+  destructive = false,
+): Record<string, any> {
   const schema: Record<string, any> =
     args.mode === "free"
       ? {
@@ -83,6 +102,9 @@ export function toolInputSchema(args: ArgsMode, outputToAllowed: boolean): Recor
         : { type: "object", properties: {}, additionalProperties: false };
   if (outputToAllowed) {
     schema.properties.output_to = OUTPUT_TO_ARG_SCHEMA;
+  }
+  if (destructive) {
+    schema.properties.acknowledge_destructive = ACKNOWLEDGE_ARG_SCHEMA;
   }
   return schema;
 }

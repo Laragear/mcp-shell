@@ -198,13 +198,36 @@ describe("flattenTools edge cases", () => {
     expect(declared[1].schema.title).toBe("A");
   });
 
-  it("flags destructive commands", () => {
-    const tools = flattenTools({
-      g: { commands: [{ label: "A", command: "echo", read_only: true, destructive: true }] },
+  it("reports a command that is both read_only and destructive and gates it as destructive", () => {
+    const { tools, cfg } = toolsFor(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      read_only: true\n      destructive: true\n",
+    );
+    expect(
+      cfg.issues.some((i) => i.includes('"read_only" and "destructive" cannot both be true')),
+    ).toBe(true);
+    expect(tools).toHaveLength(1);
+    expect(tools[0].schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
+      type: "boolean",
     });
-    const declared = tools.find((t) => !("builtin" in t.entry));
-    if (!declared) throw new Error("no declared tool generated");
-    expect(declared.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: true });
+  });
+
+  it("adds the consent argument and description to a destructive tool", () => {
+    const tool = oneTool(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      destructive: true\n",
+    );
+    expect(tool.schema.inputSchema.properties.acknowledge_destructive).toMatchObject({
+      type: "boolean",
+    });
+    expect(tool.schema.description).toContain("acknowledge_destructive");
+    expect(tool.schema.annotations).toMatchObject({ readOnlyHint: false, destructiveHint: true });
+  });
+
+  it("keeps read_only and destructive flags without conflicts as plain annotations", () => {
+    const tool = oneTool(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      read_only: true\n",
+    );
+    expect(tool.schema.annotations).toEqual({ readOnlyHint: true, destructiveHint: false });
+    expect(tool.schema.inputSchema.properties.acknowledge_destructive).toBeUndefined();
   });
 });
 

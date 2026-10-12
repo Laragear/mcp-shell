@@ -10,7 +10,7 @@ import { argMode } from "./commandline.js";
 import { toolDescription, toolInputSchema } from "./schema.js";
 import type { ToolList, ToolSchema } from "./types.js";
 
-export { OUTPUT_TO_ARG_DESCRIPTION } from "./schema.js";
+export { ACKNOWLEDGE_DESTRUCTIVE_DESCRIPTION, OUTPUT_TO_ARG_DESCRIPTION } from "./schema.js";
 
 /**
  * The first unused `<group>__<slug>` name, suffixing _2, _3, … on collision.
@@ -86,8 +86,16 @@ const SAVE_COMMAND_PROPERTIES: Record<string, any> = {
     description: "Success rules on the output",
   },
   max_output: { type: "number", description: "Output truncation limit in chars" },
-  read_only: { type: "boolean", description: "Hint: the command does not modify its environment" },
-  destructive: { type: "boolean", description: "Hint: the command may delete or overwrite" },
+  read_only: {
+    type: "boolean",
+    description:
+      "Constraint: the command does not modify its environment. It may not declare env, pipe or output_to.",
+  },
+  destructive: {
+    type: "boolean",
+    description:
+      "Constraint: the command may delete or overwrite. Every call must pass acknowledge_destructive: true.",
+  },
   output_to: {
     oneOf: [{ type: "string" }, { type: "object" }],
     description: "Opt-in raw output to a file, as in the config file",
@@ -197,11 +205,12 @@ function commandTool(
   const args = argMode(cmd);
   const outputTo = resolveOutputTo(cmd, group, defaults) as NormalizedOutputTo | null;
   const readOnly = cmd.read_only === true;
+  const destructive = cmd.destructive === true;
   const schema: ToolSchema = {
     name,
     title: cmd.label,
     description: toolDescription(groupKey, group, cmd, args, outputTo),
-    inputSchema: toolInputSchema(args, outputTo?.allow_agent === true),
+    inputSchema: toolInputSchema(args, outputTo?.allow_agent === true, destructive),
     annotations: {
       readOnlyHint: readOnly,
       destructiveHint: cmd.destructive === true ? true : !readOnly,

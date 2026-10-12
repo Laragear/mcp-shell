@@ -175,7 +175,6 @@ describe("agent config file", () => {
         pipe: "cat",
         check: { contains: "hi" },
         max_output: 10,
-        read_only: true,
         destructive: true,
       },
     );

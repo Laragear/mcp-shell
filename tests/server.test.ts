@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, it } from "vitest";
 import { Client } from "@prefecthq/fastmcp-ts/client";
 import * as fs from "node:fs";
+import * as path from "node:path";
 import { ShellRunnerServer } from "../src/server/index.js";
 import { loadConfig } from "../src/config/index.js";
 import { makeTmp, writeConfig } from "./helpers.js";
@@ -107,6 +108,54 @@ describe("ShellRunnerServer over fastmcp", () => {
       const ignored = await s.client.callToolRaw("g__greet", { who: "x", output_to: true });
       expect(ignored.isError).toBeFalsy();
       expect((ignored.content as any)[0].text).toContain("x");
+    } finally {
+      s.restore();
+    }
+  });
+
+  it("gates destructive commands behind acknowledge_destructive", async () => {
+    const marker = path.join(tmp, "destroyed.txt");
+    const s = await makeSession(
+      [
+        "g:",
+        "  commands:",
+        "    - label: Wipe",
+        `      command: touch ${marker}`,
+        "      destructive: true",
+      ].join("\n"),
+    );
+    try {
+      const refused = await s.client.callToolRaw("g__wipe", {});
+      expect(refused.isError).toBe(true);
+      expect((refused.content as any)[0].text).toBe(
+        "This command is declared destructive. Call it again with acknowledge_destructive: true.",
+      );
+      expect(fs.existsSync(marker)).toBe(false);
+
+      const explicitNo = await s.client.callToolRaw("g__wipe", { acknowledge_destructive: false });
+      expect(explicitNo.isError).toBe(true);
+      expect(fs.existsSync(marker)).toBe(false);
+
+      const ok = await s.client.callToolRaw("g__wipe", { acknowledge_destructive: true });
+      expect(ok.isError).toBeFalsy();
+      expect(fs.existsSync(marker)).toBe(true);
+    } finally {
+      s.restore();
+    }
+  });
+
+  it("refuses a save_command proposal that is both read_only and destructive", async () => {
+    const s = await makeSession("g:\n  commands:\n    - label: Ok\n      command: echo hi\n");
+    try {
+      const r = await s.client.callToolRaw("save_command", {
+        group: "agent-tools",
+        label: "Both",
+        command: "echo",
+        read_only: true,
+        destructive: true,
+      });
+      expect(r.isError).toBe(true);
+      expect((r.content as any)[0].text).toContain('cannot be both "read_only" and "destructive"');
     } finally {
       s.restore();
     }

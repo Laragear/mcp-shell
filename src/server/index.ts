@@ -167,10 +167,15 @@ export class ShellRunnerServer {
    */
   private async proposeSave(args: Record<string, unknown>): Promise<unknown> {
     const cfg = await this.reload();
+    const { group, meta, cmd } = proposalFrom(args);
+    if (cmd.read_only === true && cmd.destructive === true) {
+      return ShellRunnerServer.refuse(
+        'a proposal cannot be both "read_only" and "destructive"; nothing was written.',
+      );
+    }
     const gate = this.proposalGate(cfg);
     if (gate instanceof ToolResult) return gate;
     const { agentPath } = gate;
-    const { group, meta, cmd } = proposalFrom(args);
 
     const answer = this.approval();
     if (answer === "decline") {
@@ -353,6 +358,11 @@ export class ShellRunnerServer {
           annotations: tool.schema.annotations,
         },
         async (parsed: Record<string, unknown>) => {
+          if (entry.cmd.destructive === true && parsed.acknowledge_destructive !== true) {
+            return ShellRunnerServer.refuse(
+              "This command is declared destructive. Call it again with acknowledge_destructive: true.",
+            );
+          }
           const current = await this.reload();
           const result = await runEntry(
             entry,

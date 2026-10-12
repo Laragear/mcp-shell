@@ -116,6 +116,28 @@ function validateSharedFields(where: string, spec: any, issues: string[]): void 
   }
 }
 
+/** Validates the read_only/destructive pair: real booleans, never both true,
+ * and a read_only command may not carry side-effecting keys. Both true makes
+ * the command unusable (the caller then excludes it). */
+function validateFlags(where: string, cmd: any, issues: string[]): boolean {
+  for (const key of ["read_only", "destructive"] as const) {
+    if (cmd[key] !== undefined && typeof cmd[key] !== "boolean") {
+      issues.push(`${where}: "${key}" must be true or false`);
+    }
+  }
+  if (cmd.read_only === true && cmd.destructive === true) {
+    issues.push(`${where}: "read_only" and "destructive" cannot both be true`);
+    return false;
+  }
+  if (cmd.read_only !== true) return true;
+  if (cmd.env !== undefined) issues.push(`${where}: a "read_only" command cannot declare "env"`);
+  if (cmd.pipe !== undefined) issues.push(`${where}: a "read_only" command cannot declare "pipe"`);
+  if (cmd.output_to !== undefined && cmd.output_to !== false && cmd.output_to !== null) {
+    issues.push(`${where}: a "read_only" command cannot declare "output_to"`);
+  }
+  return true;
+}
+
 /** Validates one command spec. False when the command is unusable and must
  * be excluded from the tool list. */
 function validateCommand(where: string, cmd: any, issues: string[]): boolean {
@@ -143,7 +165,7 @@ function validateCommand(where: string, cmd: any, issues: string[]): boolean {
   if (cmd.check !== undefined && !validateCheckSpec(`${where} "${cmd.label}"`, cmd.check, issues)) {
     return false;
   }
-  return true;
+  return validateFlags(`${where} "${cmd.label}"`, cmd, issues);
 }
 
 /** Validates the "args" field shape and placeholder coverage; false when the

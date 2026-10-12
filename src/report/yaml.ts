@@ -24,7 +24,8 @@ export const COMMAND_REFERENCE = [
   `      # max_output: 5000   # output truncation limit in chars`,
   `      # output_to: logs/{command}.log — opt-in raw output to a file ({command}, {group} placeholders)`,
   `      #   or a mapping: {dir, allow_agent, append, stderr} — see config_template output`,
-  `      # read_only: true / destructive: true — MCP annotations hints`,
+  `      # read_only: true — enforced: no env, pipe or output_to allowed on the command`,
+  `      # destructive: true — enforced: calls need acknowledge_destructive: true`,
 ];
 
 /**
@@ -121,9 +122,9 @@ export function emitCommand(out: string[], cmd: any): void {
   if (cmd.max_output !== undefined) out.push(`      max_output: ${yamlScalar(cmd.max_output)}`);
   emitOutputToReference(out);
   out.push(
-    `      # read_only: ${cmd.read_only === true ? "true" : "false"}   # hint: does not modify its environment`,
+    `      # read_only: ${cmd.read_only === true ? "true" : "false"}   # enforced: no env, pipe or output_to`,
   );
   out.push(
-    `      # destructive: ${cmd.destructive === true ? "true" : "false"}  # hint: may delete/overwrite`,
+    `      # destructive: ${cmd.destructive === true ? "true" : "false"}  # enforced: calls need acknowledge_destructive: true`,
   );
 }

@@ -173,6 +173,57 @@ describe("config validation messages", () => {
   });
 });
 
+describe("read_only and destructive validation", () => {
+  it("rejects non-boolean flags", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: echo",
+        "      read_only: 1",
+        "      destructive: nope",
+      ].join("\n"),
+    );
+    expect(issues.filter((i) => i.includes('"read_only" must be true or false'))).toHaveLength(1);
+    expect(issues.filter((i) => i.includes('"destructive" must be true or false'))).toHaveLength(1);
+  });
+
+  it("rejects both flags at once", () => {
+    const issues = issuesFor(
+      "g:\n  commands:\n    - label: A\n      command: echo\n      read_only: true\n      destructive: true\n",
+    );
+    expect(
+      issues.some((i) => i.includes('"read_only" and "destructive" cannot both be true')),
+    ).toBe(true);
+  });
+
+  it("rejects side-effecting keys on a read_only command", () => {
+    const issues = issuesFor(
+      [
+        "g:",
+        "  commands:",
+        "    - label: A",
+        "      command: cat f.txt",
+        "      read_only: true",
+        "      env: { A: 1 }",
+        "      pipe: wc -l",
+        "      output_to: out.txt",
+      ].join("\n"),
+    );
+    expect(issues.some((i) => i.includes('cannot declare "env"'))).toBe(true);
+    expect(issues.some((i) => i.includes('cannot declare "pipe"'))).toBe(true);
+    expect(issues.some((i) => i.includes('cannot declare "output_to"'))).toBe(true);
+  });
+
+  it("allows output_to: false on a read_only command", () => {
+    const issues = issuesFor(
+      "g:\n  commands:\n    - label: A\n      command: cat f.txt\n      read_only: true\n      output_to: false\n",
+    );
+    expect(issues.some((i) => i.includes('cannot declare "output_to"'))).toBe(false);
+  });
+});
+
 describe("output_to validation", () => {
   it("reports every invalid output_to form", () => {
     const issues = issuesFor(
